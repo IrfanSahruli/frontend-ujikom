@@ -12,6 +12,7 @@ interface Post {
     foto: string | null;
     like: number;
     kategori: string | null;
+    waktu: string;
     createdAt: string;
     updatedAt: string;
     user: {
@@ -78,6 +79,11 @@ function HomePage() {
     };
 
     const fetchComments = async (postId: number) => {
+        if (activePost === postId) {
+            // Jika postingan sudah aktif, tutup komentar
+            setActivePost(null);
+            return;
+        }
         try {
             const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/komentar?postId=${postId}`, {
                 withCredentials: true,
@@ -183,14 +189,14 @@ function HomePage() {
         <div className="flex min-h-screen">
             <Sidebar />
 
-            <div className="flex-grow flex flex-col items-center mt-6">
-                <h1 className="text-3xl font-bold text-center text-white mb-6">
+            <div className="flex-grow flex flex-col items-start mt-6 ml-5">
+                <h1 className="text-3xl font-bold text-center text-white mb-6 ml-96">
                     <p className="text-black">Kick<span className="text-yellow-600">Talk</span></p>
                 </h1>
 
                 {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
-                <div className="w-[850px] bg-white p-4 rounded-lg shadow-md mb-5">
+                <div className="w-[850px] bg-white py-4 rounded-lg mb-5">
                     <div
                         onClick={() => setIsOpen(true)}
                         className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100"
@@ -268,14 +274,15 @@ function HomePage() {
                         <p className="text-center text-gray-500">Tidak ada postingan untuk ditampilkan.</p>
                     ) : (
                         posts.map((post) => (
-                            <div key={post.id} className="bg-white p-6 rounded-lg shadow-lg">
+                            <div key={post.id} className="bg-white p-6 rounded-lg border">
                                 <div className="flex">
                                     <img
                                         src={post.user?.fotoProfil ? `${apiUrl}${post.user.fotoProfil}` : "/default-avatar.png"}
                                         alt="Avatar"
                                         className="w-10 h-10 rounded-full mr-3 object-cover"
                                     />
-                                    <span className="mt-1 ml-2 text-[20px]">{post.user?.username}</span>
+                                    <span className="mt-1 text-[20px]">{post.user?.username}</span>
+                                    <p className='text-gray-500 text-sm'>{post.waktu}</p>
                                 </div>
                                 <p className="mt-2">{post.konten}</p>
 
@@ -300,51 +307,76 @@ function HomePage() {
                                     <div className="mt-4">
                                         {comments[post.id]?.length > 0 ? (
                                             comments[post.id].map((comment) => (
-                                                <div key={comment.id} className="border-t mt-2 pt-2 flex items-start space-x-3">
-                                                    <img
-                                                        src={comment.user?.fotoProfil ? `${apiUrl}${comment.user.fotoProfil}` : "/default-avatar.png"}
-                                                        alt="Avatar"
-                                                        className="w-10 h-10 rounded-full object-cover"
-                                                    />
-                                                    <div className="flex-1">
-                                                        <span className="font-semibold">{comment.user.username}</span>
-                                                        <p className="mt-1">{comment.isiKomentar}</p>
-                                                        <button
-                                                            className="text-blue-500 text-sm mt-1"
-                                                            onClick={() => fetchReplies(comment.id)}
-                                                        >
-                                                            Balas
-                                                        </button>
-
-                                                        {activeComment[comment.id] && (
-                                                            <div className="ml-4 mt-2 border-l-2 pl-3">
-                                                                {replies[comment.id]?.map((reply) => (
-                                                                    <div key={reply.id} className="mt-1">
-                                                                        <p className="text-sm"><strong>{reply.user.username}:</strong> {reply.balasanKomentar}</p>
-                                                                    </div>
-                                                                ))}
-                                                                <div className="mt-2 flex items-center space-x-2">
-                                                                    <input
-                                                                        type="text"
-                                                                        placeholder="Balas komentar..."
-                                                                        value={newReply[comment.id] || ''}
-                                                                        onChange={(e) => setNewReply((prev) => ({ ...prev, [comment.id]: e.target.value }))}
-                                                                        className="border rounded p-1 flex-1"
-                                                                    />
-                                                                    <button
-                                                                        className="bg-blue-500 text-white px-3 py-1 rounded"
-                                                                        onClick={() => addReply(comment.id)}
-                                                                    >
-                                                                        Kirim
-                                                                    </button>
-                                                                </div>
+                                                <div key={comment.id} className="mt-2">
+                                                    <div className="">
+                                                        {/* Avatar User */}
+                                                        <div className='flex'>
+                                                            <img
+                                                                src={comment.user?.fotoProfil ? `${apiUrl}${comment.user.fotoProfil}` : "/default-avatar.png"}
+                                                                alt="Avatar"
+                                                                className="w-8 h-8 rounded-full object-cover"
+                                                            />
+                                                            {/* Nama User dan Komentar */}
+                                                            <div className="p-2 rounded-lg">
+                                                                <span className="font-semibold text-sm">{comment.user.username}</span>
+                                                                <p className="text-sm">{comment.isiKomentar}</p>
                                                             </div>
-                                                        )}
+                                                        </div>
+
+                                                        <div className="items-start ml-10">
+                                                            {/* Tombol Balas */}
+                                                            <button
+                                                                className="text-blue-500 text-xs mt-1 relative"
+                                                                onClick={() => fetchReplies(comment.id)}
+                                                            >
+                                                                Balas
+                                                            </button>
+
+                                                            {/* Balasan Komentar */}
+                                                            {activeComment[comment.id] && (
+                                                                <div className="mt-2 border-l-2 pl-3">
+                                                                    {replies[comment.id]?.map((reply) => (
+                                                                        <div key={reply.id} className="flex space-x-2 mt-1">
+                                                                            {/* Avatar User Balasan */}
+                                                                            <img
+                                                                                src={reply.user?.fotoProfil ? `${apiUrl}${reply.user.fotoProfil}` : "/default-avatar.png"}
+                                                                                alt="Avatar"
+                                                                                className="w-6 h-6 rounded-full object-cover"
+                                                                            />
+
+                                                                            <div className="rounded-lg text-sm block mt-[2px]">
+                                                                                <span className="font-semibold">{reply.user.username}</span>
+                                                                                <p>
+                                                                                    {reply.balasanKomentar}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+
+                                                                    {/* Input untuk Balasan */}
+                                                                    <div className="flex items-center space-x-2 mt-2">
+                                                                        <input
+                                                                            type="text"
+                                                                            placeholder="Balas komentar..."
+                                                                            value={newReply[comment.id] || ''}
+                                                                            onChange={(e) => setNewReply((prev) => ({ ...prev, [comment.id]: e.target.value }))}
+                                                                            className="border rounded-lg p-1 flex-1 text-sm"
+                                                                        />
+                                                                        <button
+                                                                            className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm"
+                                                                            onClick={() => addReply(comment.id)}
+                                                                        >
+                                                                            Kirim
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))
                                         ) : (
-                                            <p className="text-gray-500 mt-2">Belum ada komentar.</p>
+                                            <p className="text-gray-500 text-sm mt-2">Belum ada komentar.</p>
                                         )}
 
                                         {/* Form Tambah Komentar */}
@@ -374,7 +406,7 @@ function HomePage() {
             </div>
 
             {/* Filter Kategori */}
-            <div className="flex flex-col items-center ml-6 mt-6 mr-6">
+            <div className="flex flex-col items-center ml-6 mt-6 mr-6 right-0 fixed">
                 <button onClick={() => setKategoriFilter('')} className="text-black w-[115px] py-2 px-4 border rounded mb-2">
                     Semua
                 </button>

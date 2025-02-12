@@ -64,13 +64,13 @@ function Register() {
 
     return (
         <div className="flex items-center justify-start min-h-screen">
-            <div className="bg-[#ffffff] p-8 shadow-2xl rounded-lg w-96 mt-6 mb-6 ml-24">
-                <h1 className="text-[30px] font-bold text-center mb-6 text-[#000957]">Register</h1>
+            <div className="bg-[#ffffff] p-8 border rounded-lg w-96 mt-6 mb-6 ml-24">
+                <h1 className="text-[30px] font-bold text-center mb-6 text-black">Register</h1>
                 {error && <p className="text-red-500 text-center mb-4">{error}</p>}
                 {success && <p className="text-green-500 text-center mb-4">{success}</p>}
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label htmlFor="username" className="block text-sm font-medium text-[#000957]">
+                        <label htmlFor="username" className="block text-sm font-medium text-black">
                             Username
                         </label>
                         <input
@@ -78,11 +78,11 @@ function Register() {
                             id="username"
                             value={formData.username}
                             onChange={handleInputChange}
-                            className="mt-1  w-full px-3 py-2 border border-[#000957] rounded-md outline-none"
+                            className="mt-1  w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-[#000000] focus:border-[#000000]"
                         />
                     </div>
                     <div className="mb-4">
-                        <label htmlFor="email" className="block text-sm font-medium text-[#000957]">
+                        <label htmlFor="email" className="block text-sm font-medium text-black">
                             Email
                         </label>
                         <input
@@ -90,11 +90,11 @@ function Register() {
                             id="email"
                             value={formData.email}
                             onChange={handleInputChange}
-                            className="mt-1  w-full px-3 py-2 border border-[#000957] rounded-md outline-none"
+                            className="mt-1  w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-[#000000] focus:border-[#000000]"
                         />
                     </div>
                     <div className="mb-4">
-                        <label htmlFor="noHp" className="block text-sm font-medium text-[#000957]">
+                        <label htmlFor="noHp" className="block text-sm font-medium text-black">
                             Nomor HP
                         </label>
                         <input
@@ -102,11 +102,11 @@ function Register() {
                             id="noHp"
                             value={formData.noHp}
                             onChange={handleInputChange}
-                            className="mt-1  w-full px-3 py-2 border border-[#000957] rounded-md outline-none"
+                            className="mt-1  w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-[#000000] focus:border-[#000000]"
                         />
                     </div>
                     <div className="mb-4">
-                        <label htmlFor="password" className="block text-sm font-medium text-[#000957]">
+                        <label htmlFor="password" className="block text-sm font-medium text-black">
                             Password
                         </label>
                         <input
@@ -114,11 +114,11 @@ function Register() {
                             id="password"
                             value={formData.password}
                             onChange={handleInputChange}
-                            className="mt-1  w-full px-3 py-2 border border-[#000957] rounded-md outline-none"
+                            className="mt-1  w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-[#000000] focus:border-[#000000]"
                         />
                     </div>
                     <div className="mb-4">
-                        <label htmlFor="fotoProfil" className="block text-sm font-medium text-[#000957]">
+                        <label htmlFor="fotoProfil" className="block text-sm font-medium text-black">
                             Foto Profil
                         </label>
                         <input

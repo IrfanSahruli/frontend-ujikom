@@ -53,12 +53,12 @@ function Login() {
                     Kick<span className='text-yellow-500'>Talk</span>
                 </p>
             </div>
-            <div className='bg-[#ffffff] p-8 shadow-2xl rounded-lg w-96'>
-                <h1 className='text-[30px] font-bold text-center mb-6 text-[#000957]'>Login</h1>
+            <div className='bg-[#ffffff] p-8 border rounded-lg w-96'>
+                <h1 className='text-[30px] font-bold text-center mb-6 text-black'>Login</h1>
                 {error && <p className='text-red-500 text-center mb-4'>{error}</p>}
                 <form onSubmit={handleSubmit}>
                     <div className='mb-4'>
-                        <label htmlFor='username' className='block text-sm font-medium text-[#000957]'>
+                        <label htmlFor='username' className='block text-sm font-medium text-black'>
                             Username
                         </label>
                         <input
@@ -66,11 +66,11 @@ function Login() {
                             id='username'
                             value={formData.username}
                             onChange={handleInputChange}
-                            className='mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-[#000957] focus:border-[#000957]'
+                            className='mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-[#000000] focus:border-[#000000]'
                         />
                     </div>
                     <div className='mb-4'>
-                        <label htmlFor='password' className='block text-sm font-medium text-[#000957]'>
+                        <label htmlFor='password' className='block text-sm font-medium text-black'>
                             Password
                         </label>
                         <input
@@ -78,7 +78,7 @@ function Login() {
                             id='password'
                             value={formData.password}
                             onChange={handleInputChange}
-                            className='mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-[#000957] focus:border-[#000957]'
+                            className='mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-[#000000] focus:border-[#000000]'
                         />
                     </div>
                     <button
