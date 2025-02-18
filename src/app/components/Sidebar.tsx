@@ -1,8 +1,32 @@
-import Link from "next/link";
+'use client';
 
-function Sidebar({ setKategoriFilter }) {
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3500';
+
+function Sidebar() {
+    const [user, setUser] = useState<{ id: number; username: string; fotoProfil: string | null } | null>(null);
+
+    const fetchUser = async () => {
+        try {
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, {
+                withCredentials: true,
+            });
+            setUser(response.data); // Pastikan response sesuai
+        } catch (error) {
+            console.error('Gagal mengambil data user', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchUser();
+    }, []);
+
     return (
-        <div className="h-screen w-[303px] bg-[#ffffff] text-white flex flex-col sticky top-0 border-e">
+        <div className="h-screen w-[236px] bg-[#ffffff] text-white flex flex-col sticky top-0 border-e">
             {/* Logo */}
             <div className="p-4 text-2xl font-bold border-b text-center">
                 <p className="text-black">Kick<span className="text-yellow-600">Talk</span></p>
@@ -11,37 +35,37 @@ function Sidebar({ setKategoriFilter }) {
             {/* Menu */}
             <nav className="flex-1">
                 <ul className="p-4 space-y-4">
-                    <li>
-                        <Link href="/User/HomePage" className="block py-2 px-4 rounded text-black">
+                    <li className='flex hover:bg-gray-50 h-[40px] rounded-md items-center'>
+                        <img src="/image/home.svg" alt="logo home" className='w-[28px] h-[28px] ml-3' />
+                        <Link href="/User/HomePage" className="block py-1 px-2 rounded text-black">
                             Home
                         </Link>
                     </li>
-                    <li>
-                        <Link href="/User/Notifikasi" className="block py-2 px-4 rounded text-black">
+                    <li className='flex hover:bg-gray-50 h-[40px] rounded-md items-center'>
+                        <img src="/image/message.svg" alt="logo notifikasi" className='w-[28px] h-[28px] ml-3' />
+                        <Link href="/User/Notifikasi" className="block py-1 px-2 rounded text-black">
                             Notifikasi
                         </Link>
                     </li>
-                    <li>
-                        <Link href="/contact" className="block py-2 px-4 rounded text-black">
-                            Contact
-                        </Link>
+                    <li className='flex hover:bg-gray-50 h-[40px] rounded-md items-center'>
+                        {user ? (
+                            <div className='flex text-center ml-3'>
+                                <img
+                                    src={user.fotoProfil ? `${apiUrl}${user.fotoProfil}` : "/default-avatar.png"}
+                                    alt="Avatar"
+                                    className="w-[30px] h-[30px] rounded-full object-cover border-[2px] border-black"
+                                />
+                                <Link href='/User/Profil' className='text-black ml-2 mt-1'>Profil</Link>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center">
+                                <div className="w-10 h-10 bg-gray-300 rounded-full animate-pulse"></div>
+                                <div className="w-20 h-4 mt-2 bg-gray-300 rounded animate-pulse"></div>
+                            </div>
+                        )}
                     </li>
                 </ul>
             </nav>
-
-            {/* Kategori Filter */}
-            <div className="p-4 border-t">
-                <h2 className="text-lg font-semibold text-black mb-2">Kategori</h2>
-                <button onClick={() => setKategoriFilter('')} className="block w-full text-left py-2 px-4 border rounded mb-2 text-black">
-                    Semua
-                </button>
-                <button onClick={() => setKategoriFilter('sepak bola')} className="block w-full text-left py-2 px-4 border rounded mb-2 text-black">
-                    Sepak Bola
-                </button>
-                <button onClick={() => setKategoriFilter('futsal')} className="block w-full text-left py-2 px-4 border rounded mb-2 text-black">
-                    Futsal
-                </button>
-            </div>
         </div>
     );
 };

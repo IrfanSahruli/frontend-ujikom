@@ -290,7 +290,7 @@ const Profil = () => {
             </div>
 
             {/* Profil (Di Kanan) */}
-            <div className="w-[300px] flex flex-col items-center text-center p-5 shadow-lg border-l sticky top-0 h-screen">
+            <div className="w-1/5 flex flex-col items-center text-center p-5 shadow-lg border-l sticky top-0 h-screen">
                 {user ? (
                     <div>
                         <img

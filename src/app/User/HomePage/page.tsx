@@ -28,6 +28,7 @@ interface Reply {
     userId: number;
     komentarId: number;
     balasanKomentar: string;
+    komentarUsername: string;
     createdAt: string;
     user: {
         id: number;
@@ -52,6 +53,7 @@ function HomePage() {
     const [activeComment, setActiveComment] = useState<Record<number, boolean>>({});
     const [replies, setReplies] = useState<Record<number, Reply[]>>({});
     const [newReply, setNewReply] = useState<Record<number, string>>({});
+    const [replyingTo, setReplyingTo] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(false); // Tambahkan state modal
     const router = useRouter();
 
@@ -148,6 +150,14 @@ function HomePage() {
         }
     };
 
+    const handleReplyClick = (commentId: number, username: string) => {
+        setReplyingTo(username); // Set username yang dibalas
+        setNewReply((prev) => ({
+            ...prev,
+            [commentId]: ''
+        }));
+    };
+
     useEffect(() => {
         fetchUser();
         fetchPosts(kategoriFilter);
@@ -188,7 +198,7 @@ function HomePage() {
 
     return (
         <div className="flex min-h-screen">
-            <Sidebar setKategoriFilter={setKategoriFilter} />
+            <Sidebar />
 
             <div className="flex-grow flex flex-col items-start mt-6 ml-5">
                 <h1 className="text-3xl font-bold text-center text-white mb-6 ml-96">
@@ -350,9 +360,12 @@ function HomePage() {
 
                                                                             <div className="rounded-lg text-sm block mt-[2px]">
                                                                                 <span className="font-semibold">{reply.user.username}</span>
-                                                                                <p>
-                                                                                    {reply.balasanKomentar}
-                                                                                </p>
+                                                                                <div className='flex'>
+                                                                                    {reply.komentar?.user?.username && (
+                                                                                        <p className='font-bold'>@{reply.komentar.user.username}</p>
+                                                                                    )}
+                                                                                    <p className='ml-1'>{reply.balasanKomentar}</p>
+                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                     ))}
@@ -361,7 +374,7 @@ function HomePage() {
                                                                     <div className="flex items-center space-x-2 mt-2">
                                                                         <input
                                                                             type="text"
-                                                                            placeholder="Balas komentar..."
+                                                                            placeholder={replyingTo ? `Balas ke @${replyingTo}...` : 'Balas komentar...'}
                                                                             value={newReply[comment.id] || ''}
                                                                             onChange={(e) => setNewReply((prev) => ({ ...prev, [comment.id]: e.target.value }))}
                                                                             className="border rounded-lg p-1 flex-1 text-sm"
@@ -410,33 +423,32 @@ function HomePage() {
             </div>
 
             {/* Filter Kategori */}
-            <div className="flex flex-col items-center ml-6 mt-6 mr-6 right-0 fixed">
-                <div className='w-[150px] flex text-center mt-24'>
-                    {user ? (
-                        <div>
-                            <img
-                                src={user.fotoProfil ? `${apiUrl}${user.fotoProfil}` : "/default-avatar.png"}
-                                alt="Avatar"
-                                className="w-45 h-45 rounded-full object-cover"
-                            />
-                            <p className="mt-2 text-[20px] font-semibold text-gray-700">{user.username}</p>
-                            <button className="w-[130px] mt-4 text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-full text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700">
-                                <Link href='/User/Profil'>
-                                    Profil
-                                </Link>
-                            </button>
-                            <button className="w-[130px] mt-7 text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-full text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-800 dark:text-white dark:border-red-600 dark:hover:bg-red-700 dark:hover:border-red-600 dark:focus:ring-red-700">
-                                Log Out
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center">
-                            <div className="w-10 h-10 bg-gray-300 rounded-full animate-pulse"></div>
-                            <div className="w-20 h-4 mt-2 bg-gray-300 rounded animate-pulse"></div>
-                        </div>
-                    )}
+            <div className="flex flex-col border rounded-lg h-[110px] items-center mr-2 top-4 sticky">
+                {/* Container untuk tombol Semua dan Sepak Bola */}
+                <div className="flex m-2">
+                    <button
+                        className="bg-white text-black py-2 px-4 border rounded hover:bg-gray-50 min-w-[50px]"
+                        onClick={() => setKategoriFilter('')}
+                    >
+                        Semua
+                    </button>
+                    <button
+                        className="bg-white text-black py-2 px-4 border rounded hover:bg-gray-50 min-w-[50px] ml-2"
+                        onClick={() => setKategoriFilter('sepak bola')}
+                    >
+                        Sepak Bola
+                    </button>
                 </div>
+
+                {/* Tombol Futsal */}
+                <button
+                    className="bg-white text-black py-2 px-4 border rounded hover:bg-gray-50 min-w-[50px]"
+                    onClick={() => setKategoriFilter('futsal')}
+                >
+                    Futsal
+                </button>
             </div>
+
         </div>
     );
 }
