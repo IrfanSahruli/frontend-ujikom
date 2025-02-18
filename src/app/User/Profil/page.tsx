@@ -1,10 +1,7 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useRouter } from 'next/navigation';
-import Sidebar from '@/app/components/Sidebar';
-import Link from 'next/link';
+"use client";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import Sidebar from "@/app/components/Sidebar";
 
 interface Post {
     id: number;
@@ -38,44 +35,36 @@ interface Reply {
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3500';
 
-function HomePage() {
+const Profil = () => {
     const [user, setUser] = useState<{ id: number; username: string; fotoProfil: string | null } | null>(null);
-    const [konten, setKonten] = useState<string>('');
-    const [foto, setFoto] = useState<File | null>(null);
-    const [posts, setPosts] = useState<Post[]>([]);
-    const [error, setError] = useState<string>('');
-    const [kategoriFilter, setKategoriFilter] = useState<string>('');
-    const [kategori, setKategori] = useState<string>('');
+    const [postingan, setPostingan] = useState<Post[]>([]);
     const [activePost, setActivePost] = useState<number | null>(null);
     const [comments, setComments] = useState<Record<number, any[]>>({});
     const [newComment, setNewComment] = useState<Record<number, string>>({});
     const [activeComment, setActiveComment] = useState<Record<number, boolean>>({});
     const [replies, setReplies] = useState<Record<number, Reply[]>>({});
     const [newReply, setNewReply] = useState<Record<number, string>>({});
-    const [isOpen, setIsOpen] = useState(false); // Tambahkan state modal
-    const router = useRouter();
+    const [error, setError] = useState<string>('');
 
     const fetchUser = async () => {
         try {
             const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, {
                 withCredentials: true,
             });
-            setUser(response.data); // Pastikan response sesuai
+            setUser(response.data);
         } catch (error) {
-            console.error('Gagal mengambil data user', error);
+            console.error("Gagal mengambil data user", error);
         }
     };
 
-    const fetchPosts = async (kategoriFilter?: string) => {
+    const fetchMyPosts = async () => {
         try {
-            const url = kategoriFilter
-                ? `${process.env.NEXT_PUBLIC_API_URL}/postingan/kategori/${kategoriFilter}`
-                : `${process.env.NEXT_PUBLIC_API_URL}/postingan`;
-
-            const response = await axios.get(url, { withCredentials: true });
-            setPosts(response.data.postingan);
-        } catch (err) {
-            setError('Terjadi kesalahan saat mengambil postingan. Silahkan coba lagi.');
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/myPostingan`, {
+                withCredentials: true,
+            });
+            setPostingan(response.data.postingan);
+        } catch (error) {
+            console.error("Gagal mengambil postingan saya", error);
         }
     };
 
@@ -150,131 +139,22 @@ function HomePage() {
 
     useEffect(() => {
         fetchUser();
-        fetchPosts(kategoriFilter);
-    }, [kategoriFilter]);
-
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-
-        if (!konten.trim() || !kategori) {
-            setError("Konten dan kategori tidak boleh kosong.");
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append("konten", konten);
-        formData.append("kategori", kategori);
-        if (foto) {
-            formData.append("foto", foto);
-        }
-
-        try {
-            const response = await axios.post(
-                `${process.env.NEXT_PUBLIC_API_URL}/postingan`,
-                formData,
-                { withCredentials: true }
-            );
-
-            setPosts([response.data.postingan, ...posts]); // Tambahkan postingan baru ke state
-            setIsOpen(false);
-            setKonten("");
-            setFoto(null);
-            setKategori("");
-        } catch (err) {
-            setError("Gagal mengirim postingan. Pastikan server berjalan.");
-        }
-    };
-
+        fetchMyPosts();
+    }, []);
 
     return (
         <div className="flex min-h-screen">
-            <Sidebar setKategoriFilter={setKategoriFilter} />
+            {/* Sidebar (Kiri) */}
+            <Sidebar />
 
-            <div className="flex-grow flex flex-col items-start mt-6 ml-5">
-                <h1 className="text-3xl font-bold text-center text-white mb-6 ml-96">
-                    <p className="text-black">Kick<span className="text-yellow-600">Talk</span></p>
-                </h1>
-
-                {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-
-                <div className="w-[800px] bg-white py-4 rounded-lg mb-5">
-                    <div
-                        onClick={() => setIsOpen(true)}
-                        className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100"
-                    >
-                        {user ? (
-                            <img
-                                src={user.fotoProfil ? `${apiUrl}${user.fotoProfil}` : "/default-avatar.png"}
-                                alt="Avatar"
-                                className="w-10 h-10 rounded-full mr-3 object-cover"
-                            />
-                        ) : (
-                            <div className="w-10 h-10 bg-gray-300 rounded-full mr-3 animate-pulse"></div>
-                        )}
-                        <span className="text-gray-500">Apa yang Anda pikirkan?</span>
-                    </div>
-
-                    {isOpen && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-                            <div className="bg-white w-[500px] p-6 rounded-lg shadow-lg">
-                                <h2 className="text-xl font-semibold mb-4">Buat Postingan Baru</h2>
-                                <form onSubmit={handleSubmit}>
-                                    <textarea
-                                        name="konten"
-                                        value={konten}
-                                        onChange={(e) => setKonten(e.target.value)}
-                                        placeholder="Tulis sesuatu..."
-                                        required
-                                        className="w-full p-3 border border-gray-300 rounded-lg mb-4"
-                                    ></textarea>
-
-                                    {/* Dropdown kategori */}
-                                    <select
-                                        name="kategori"
-                                        value={kategori}
-                                        onChange={(e) => setKategori(e.target.value)}
-                                        required
-                                        className="w-full p-3 border border-gray-300 rounded-lg mb-4"
-                                    >
-                                        <option value="" disabled>Pilih Kategori</option>
-                                        <option value="sepak bola">Sepak Bola</option>
-                                        <option value="futsal">Futsal</option>
-                                    </select>
-
-                                    <input
-                                        type="file"
-                                        name="foto"
-                                        accept="image/*"
-                                        onChange={(e) => setFoto(e.target.files ? e.target.files[0] : null)}
-                                        className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg mb-4 cursor-pointer"
-                                    />
-
-                                    <div className="flex justify-end gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsOpen(false)}
-                                            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
-                                        >
-                                            Batal
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                                        >
-                                            Posting
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
+            {/* Postingan (Di Tengah) */}
+            <div className="flex-grow p-5 flex flex-col items-center">
+                <h2 className="text-lg font-semibold mb-3">Postingan Saya:</h2>
                 <div className="w-[800px] space-y-4">
-                    {posts.length === 0 ? (
+                    {postingan.length === 0 ? (
                         <p className="text-center text-gray-500">Tidak ada postingan untuk ditampilkan.</p>
                     ) : (
-                        posts.map((post) => (
+                        postingan.map((post) => (
                             <div key={post.id} className="bg-white p-6 rounded-lg border">
                                 <div className="flex">
                                     <img
@@ -409,36 +289,26 @@ function HomePage() {
                 </div>
             </div>
 
-            {/* Filter Kategori */}
-            <div className="flex flex-col items-center ml-6 mt-6 mr-6 right-0 fixed">
-                <div className='w-[150px] flex text-center mt-24'>
-                    {user ? (
-                        <div>
-                            <img
-                                src={user.fotoProfil ? `${apiUrl}${user.fotoProfil}` : "/default-avatar.png"}
-                                alt="Avatar"
-                                className="w-45 h-45 rounded-full object-cover"
-                            />
-                            <p className="mt-2 text-[20px] font-semibold text-gray-700">{user.username}</p>
-                            <button className="w-[130px] mt-4 text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-full text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700">
-                                <Link href='/User/Profil'>
-                                    Profil
-                                </Link>
-                            </button>
-                            <button className="w-[130px] mt-7 text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-full text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-800 dark:text-white dark:border-red-600 dark:hover:bg-red-700 dark:hover:border-red-600 dark:focus:ring-red-700">
-                                Log Out
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center">
-                            <div className="w-10 h-10 bg-gray-300 rounded-full animate-pulse"></div>
-                            <div className="w-20 h-4 mt-2 bg-gray-300 rounded animate-pulse"></div>
-                        </div>
-                    )}
-                </div>
+            {/* Profil (Di Kanan) */}
+            <div className="w-[300px] flex flex-col items-center text-center p-5 shadow-lg border-l sticky top-0 h-screen">
+                {user ? (
+                    <div>
+                        <img
+                            src={user.fotoProfil ? `${apiUrl}${user.fotoProfil}` : "/default-avatar.png"}
+                            alt="Avatar"
+                            className="w-20 h-20 rounded-full object-cover mt-32"
+                        />
+                        <p className="mt-2 text-[20px] font-semibold text-gray-700">{user.username}</p>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center">
+                        <div className="w-10 h-10 bg-gray-300 rounded-full animate-pulse"></div>
+                        <div className="w-20 h-4 mt-2 bg-gray-300 rounded animate-pulse"></div>
+                    </div>
+                )}
             </div>
         </div>
     );
-}
+};
 
-export default HomePage;
+export default Profil;

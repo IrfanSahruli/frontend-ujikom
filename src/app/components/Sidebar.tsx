@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-function Sidebar() {
+function Sidebar({ setKategoriFilter }) {
     return (
         <div className="h-screen w-[303px] bg-[#ffffff] text-white flex flex-col sticky top-0 border-e">
             {/* Logo */}
@@ -17,8 +17,8 @@ function Sidebar() {
                         </Link>
                     </li>
                     <li>
-                        <Link href="/about" className="block py-2 px-4 rounded text-black">
-                            About
+                        <Link href="/User/Notifikasi" className="block py-2 px-4 rounded text-black">
+                            Notifikasi
                         </Link>
                     </li>
                     <li>
@@ -28,6 +28,20 @@ function Sidebar() {
                     </li>
                 </ul>
             </nav>
+
+            {/* Kategori Filter */}
+            <div className="p-4 border-t">
+                <h2 className="text-lg font-semibold text-black mb-2">Kategori</h2>
+                <button onClick={() => setKategoriFilter('')} className="block w-full text-left py-2 px-4 border rounded mb-2 text-black">
+                    Semua
+                </button>
+                <button onClick={() => setKategoriFilter('sepak bola')} className="block w-full text-left py-2 px-4 border rounded mb-2 text-black">
+                    Sepak Bola
+                </button>
+                <button onClick={() => setKategoriFilter('futsal')} className="block w-full text-left py-2 px-4 border rounded mb-2 text-black">
+                    Futsal
+                </button>
+            </div>
         </div>
     );
 };
