@@ -122,21 +122,31 @@ function HomePage() {
 
     const fetchReplies = async (komentarId: number) => {
         try {
-            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/balaskomentar/${komentarId}`, { withCredentials: true });
-            setReplies((prev) => ({ ...prev, [komentarId]: response.data }));
-            setActiveComment((prev) => ({ ...prev, [komentarId]: !prev[komentarId] }));
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/balaskomentar/${komentarId}`, {
+                withCredentials: true,
+            });
+
+            setReplies((prev) => ({
+                ...prev,
+                [komentarId]: response.data, // Simpan hasil fetch di state
+            }));
         } catch (error) {
             console.error('Gagal memuat balasan', error);
         }
     };
 
-    const addReply = async (komentarId: number) => {
-        if (!newReply[komentarId]?.trim()) return;
+    const addReply = async (komentarId: number, username: string) => {
+        const mention = `@${username} `;
+        const existingText = newReply[komentarId] || '';
+
+        // Jika belum ada mention dalam teks, tambahkan
+        const replyText = existingText.startsWith(mention) ? existingText.trim() : mention + existingText.trim();
+        if (!replyText) return;
 
         try {
             const response = await axios.post(
                 `${process.env.NEXT_PUBLIC_API_URL}/balaskomentar`,
-                { komentarId, balasanKomentar: newReply[komentarId] },
+                { komentarId, balasanKomentar: replyText },
                 { withCredentials: true }
             );
 
@@ -144,18 +154,11 @@ function HomePage() {
                 ...prev,
                 [komentarId]: [...(prev[komentarId] || []), response.data.balasan],
             }));
-            setNewReply((prev) => ({ ...prev, [komentarId]: '' }));
+
+            setNewReply((prev) => ({ ...prev, [komentarId]: '' })); // Reset input setelah balas
         } catch (error) {
             console.error('Gagal menambah balasan komentar', error);
         }
-    };
-
-    const handleReplyClick = (commentId: number, username: string) => {
-        setReplyingTo(username); // Set username yang dibalas
-        setNewReply((prev) => ({
-            ...prev,
-            [commentId]: ''
-        }));
     };
 
     useEffect(() => {
@@ -195,6 +198,20 @@ function HomePage() {
         }
     };
 
+    const handleReplyClick = async (komentarId: number, username: string) => {
+        setActiveComment((prev) => ({ ...prev, [komentarId]: !prev[komentarId] }));
+
+        // Jika belum ada data balasan, baru fetch
+        if (!replies[komentarId]) {
+            await fetchReplies(komentarId);
+        }
+
+        // Tambahkan mention secara otomatis ke input balasan
+        setNewReply((prev) => {
+            const mention = `@${username} `;
+            return { ...prev, [komentarId]: prev[komentarId]?.startsWith(mention) ? prev[komentarId] : mention };
+        });
+    };
 
     return (
         <div className="flex min-h-screen">
@@ -338,50 +355,69 @@ function HomePage() {
                                                         </div>
 
                                                         <div className="items-start ml-10">
-                                                            {/* Tombol Balas */}
-                                                            <button
-                                                                className="text-blue-500 text-xs mt-1 relative"
-                                                                onClick={() => fetchReplies(comment.id)}
-                                                            >
-                                                                Balas
-                                                            </button>
+                                                            {/* Tombol Balas & Tutup */}
+                                                            <div className="flex space-x-2">
+                                                                <button
+                                                                    className="text-blue-500 text-sm font-medium"
+                                                                    onClick={() => handleReplyClick(comment.id, comment.user.username)}
+                                                                >
+                                                                    {activeComment[comment.id] ? "Balas" : "Balas"}
+                                                                </button>
+
+                                                                {activeComment[comment.id] && (
+                                                                    <button
+                                                                        className="text-red-500 text-sm font-medium"
+                                                                        onClick={() => setActiveComment((prev) => ({ ...prev, [comment.id]: false }))}
+                                                                    >
+                                                                        Tutup
+                                                                    </button>
+                                                                )}
+                                                            </div>
 
                                                             {/* Balasan Komentar */}
                                                             {activeComment[comment.id] && (
                                                                 <div className="mt-2 border-l-2 pl-3">
-                                                                    {replies[comment.id]?.map((reply) => (
-                                                                        <div key={reply.id} className="flex space-x-2 mt-1">
-                                                                            {/* Avatar User Balasan */}
-                                                                            <img
-                                                                                src={reply.user?.fotoProfil ? `${apiUrl}${reply.user.fotoProfil}` : "/default-avatar.png"}
-                                                                                alt="Avatar"
-                                                                                className="w-6 h-6 rounded-full object-cover"
-                                                                            />
+                                                                    {replies[comment.id]?.map((reply) => {
+                                                                        // Regex untuk mendeteksi username di awal teks (misalnya "@adul teks balasan...")
+                                                                        const mentionMatch = reply.balasanKomentar.match(/^@(\S+)\s(.*)/);
 
-                                                                            <div className="rounded-lg text-sm block mt-[2px]">
-                                                                                <span className="font-semibold">{reply.user.username}</span>
-                                                                                <div className='flex'>
-                                                                                    {reply.komentar?.user?.username && (
-                                                                                        <p className='font-bold'>@{reply.komentar.user.username}</p>
-                                                                                    )}
-                                                                                    <p className='ml-1'>{reply.balasanKomentar}</p>
+                                                                        // Pisahkan username dari teks balasan
+                                                                        const mentionUsername = mentionMatch ? mentionMatch[1] : null;
+                                                                        const balasanTeks = mentionMatch ? mentionMatch[2] : reply.balasanKomentar;
+
+                                                                        return (
+                                                                            <div key={reply.id} className="flex space-x-2 mt-1">
+                                                                                <img
+                                                                                    src={reply.user?.fotoProfil ? `${apiUrl}${reply.user.fotoProfil}` : "/default-avatar.png"}
+                                                                                    alt="Avatar"
+                                                                                    className="w-6 h-6 rounded-full object-cover"
+                                                                                />
+                                                                                <div className="rounded-lg text-sm block mt-[2px]">
+                                                                                    <span className="font-semibold">{reply.user.username}</span>
+                                                                                    <div className="flex">
+                                                                                        {/* Jika ada username mention, tampilkan dengan style khusus */}
+                                                                                        {mentionUsername && (
+                                                                                            <span className="text-blue-500 font-semibold mr-1">@{mentionUsername}</span>
+                                                                                        )}
+                                                                                        <p>{balasanTeks}</p>
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
-                                                                        </div>
-                                                                    ))}
+                                                                        );
+                                                                    })}
 
                                                                     {/* Input untuk Balasan */}
                                                                     <div className="flex items-center space-x-2 mt-2">
                                                                         <input
                                                                             type="text"
-                                                                            placeholder={replyingTo ? `Balas ke @${replyingTo}...` : 'Balas komentar...'}
+                                                                            placeholder="Balas komentar..."
                                                                             value={newReply[comment.id] || ''}
                                                                             onChange={(e) => setNewReply((prev) => ({ ...prev, [comment.id]: e.target.value }))}
                                                                             className="border rounded-lg p-1 flex-1 text-sm"
                                                                         />
                                                                         <button
                                                                             className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm"
-                                                                            onClick={() => addReply(comment.id)}
+                                                                            onClick={() => addReply(comment.id, comment.user.username)}
                                                                         >
                                                                             Kirim
                                                                         </button>
