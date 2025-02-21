@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Sidebar from '@/app/components/Sidebar';
 import moment from 'moment';
@@ -36,6 +37,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://l
 const NotifikasiPage = () => {
     const [notifikasi, setNotifikasi] = useState<Notifikasi[]>([]);
     const [unreadCount, setUnreadCount] = useState<number>(0);
+    const router = useRouter();
 
     useEffect(() => {
         axios.get(`${process.env.NEXT_PUBLIC_API_URL}/notifikasi`, { withCredentials: true })
@@ -58,6 +60,28 @@ const NotifikasiPage = () => {
         }
     };
 
+    const handleNotificationClick = async (notif: Notifikasi) => {
+        await handleReadNotification(notif.id);
+
+        let targetUrl = "";
+
+        if (notif.forum_id) {
+            if (notif.comment_id) {
+                targetUrl = `/User/PostinganDetail/${notif.forum_id}#comment-${notif.comment_id}`;
+            } else if (notif.reply_id) {
+                targetUrl = `/User/PostinganDetail/${notif.forum_id}#reply-${notif.reply_id}`;
+            } else {
+                targetUrl = `/User/PostinganDetail/${notif.forum_id}`;
+            }
+        } else {
+            alert("Notifikasi tidak memiliki tujuan yang jelas.");
+            return;
+        }
+
+        console.log("Navigating to:", targetUrl); // Debugging URL
+        router.push(targetUrl);
+    };
+
     return (
         <div className="flex">
             <Sidebar />
@@ -72,7 +96,7 @@ const NotifikasiPage = () => {
                             <div
                                 key={notif.id}
                                 className={`p-4 rounded-lg shadow-md cursor-pointer transition ${notif.isRead ? "bg-white" : "bg-blue-100"}`}
-                                onClick={() => handleReadNotification(notif.id)}
+                                onClick={() => handleNotificationClick(notif)}
                             >
                                 <div className="flex items-center">
                                     <img

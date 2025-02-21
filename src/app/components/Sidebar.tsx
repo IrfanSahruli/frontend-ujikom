@@ -55,7 +55,7 @@ function Sidebar() {
                                     alt="Avatar"
                                     className="w-[30px] h-[30px] rounded-full object-cover border-[2px] border-black"
                                 />
-                                <Link href='/User/Profil' className='text-black ml-2 mt-1'>Profil</Link>
+                                <Link href='/User/Profile' className='text-black ml-2 mt-1'>Profil</Link>
                             </div>
                         ) : (
                             <div className="flex flex-col items-center">
