@@ -49,7 +49,17 @@ function HomePage() {
     const [kategori, setKategori] = useState<string>('');
     const [isOpen, setIsOpen] = useState(false); // Tambahkan state modal
     const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+    const [showModal, setShowModal] = useState(false);
+    const [selectedAlasan, setSelectedAlasan] = useState<Record<number, string>>({});
+    const [showModalForPost, setShowModalForPost] = useState(null);
     const router = useRouter();
+
+    const alasanLaporan = [
+        "Mengandung judi",
+        "Mengandung ujaran kebencian",
+        "Konten tidak pantas",
+        "Spam",
+    ];
 
     const fetchUser = async () => {
         try {
@@ -72,6 +82,30 @@ function HomePage() {
             setPosts(response.data.postingan);
         } catch (err) {
             setError('Terjadi kesalahan saat mengambil postingan. Silahkan coba lagi.');
+        }
+    };
+
+    const selectedPost = posts.find((p) => p.id === showModalForPost);
+
+    const laporkanPostingan = async () => {
+        if (!selectedPostId) return;
+
+        try {
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_API_URL}/laporkanPostingan`,
+                { postId: selectedPostId, alasan: selectedAlasan[selectedPostId] || "" },
+                { withCredentials: true }
+            );
+
+            if (response.status === 201) {
+                alert("Laporan berhasil dikirim");
+                setShowModal(false);
+            } else {
+                alert("Gagal melaporkan postingan");
+            }
+        } catch (error) {
+            console.error("Gagal mengirim laporan:", error);
+            alert("Terjadi kesalahan. Silakan coba lagi.");
         }
     };
 
@@ -201,40 +235,89 @@ function HomePage() {
                         <p className="text-center text-gray-500">Tidak ada postingan.</p>
                     ) : (
                         posts.map((post) => (
-                            <div key={post.id} className="bg-white p-6 rounded-lg border">
-                                <div className="flex">
-                                    {/* Tambahkan Link ke halaman profil user */}
+                            <div key={post.id} className="bg-white p-6 rounded-lg border relative">
+                                <div className="flex justify-between">
                                     <Link href={`/User/Profile/${post.user.id}`} className="flex items-center">
                                         <img
                                             src={post.user?.fotoProfil ? `${apiUrl}${post.user.fotoProfil}` : "/default-avatar.png"}
                                             alt="Avatar"
-                                            className="w-10 h-10 rounded-full mr-2 object-cover cursor-pointer"
+                                            className="w-10 h-10 rounded-full mr-2 object-cover"
                                         />
                                         <div>
-                                            <span className="text-[18px] hover:underline cursor-pointer">
-                                                {post.user?.username}
-                                            </span>
+                                            <span className="text-[18px] hover:underline">{post.user?.username}</span>
                                             <p className='text-gray-500 text-[10px] mt-0'>{post.waktu}</p>
                                         </div>
                                     </Link>
+
+                                    {/* Tombol opsi titik tiga */}
+                                    <button onClick={() => setSelectedPostId(selectedPostId === post.id ? null : post.id)} className="text-gray-600 hover:text-gray-900">
+                                        ⋮
+                                    </button>
+
+                                    {selectedPostId === post.id && (
+                                        <div className="absolute top-10 right-4 bg-white border rounded-lg shadow-md p-2">
+                                            <button
+                                                className="text-sm text-red-500 hover:text-red-700"
+                                                onClick={() => setShowModalForPost(showModalForPost === post.id ? null : post.id)}
+                                            >
+                                                Laporkan Postingan
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
+
                                 <p className="mt-2">{post.konten}</p>
                                 {post.foto && (
                                     <img src={`${apiUrl}${post.foto}`} alt={`Foto ${post.id}`} className="w-[600px] h-[500px] rounded-md mt-4" />
                                 )}
+
                                 <div className="flex items-center space-x-4 mt-4">
-                                    <button className="flex items-center space-x-1 text-gray-600 hover:text-blue-500">
-                                        👍 <span className="text-sm">Like</span>
-                                    </button>
-                                    <button className="flex items-center space-x-1 text-gray-600 hover:text-blue-500"
-                                        onClick={() => router.push(`/User/PostinganDetail/${post.id}`)}>
-                                        💬 <span className="text-sm">Komentar</span>
-                                    </button>
+                                    <button className="text-gray-600 hover:text-blue-500">👍 Like</button>
+                                    <button className="text-gray-600 hover:text-blue-500" onClick={() => router.push(`/User/PostinganDetail/${post.id}`)}>💬 Komentar</button>
                                 </div>
                             </div>
                         ))
                     )}
                 </div>
+
+                {/* Modal laporan */}
+                {selectedPost && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg">
+                            <h2 className="text-lg font-semibold">Laporkan Postingan</h2>
+                            <p className="text-sm text-gray-600">Pilih alasan pelaporan:</p>
+                            <div className="mt-2">
+                                {alasanLaporan.map((alasan, index) => (
+                                    <div key={index} className="flex items-center space-x-2">
+                                        <input
+                                            type="radio"
+                                            id={`alasan-${selectedPost.id}-${index}`}
+                                            name={`alasan-${selectedPost.id}`}
+                                            value={alasan}
+                                            onChange={(e) =>
+                                                setSelectedAlasan((prev) => ({
+                                                    ...prev,
+                                                    [selectedPost.id]: String(e.target.value) // Pastikan nilainya string
+                                                }))
+                                            }
+                                        />
+                                        <label htmlFor={`alasan-${selectedPost.id}-${index}`} className="text-sm">{alasan}</label>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex justify-end space-x-2 mt-4">
+                                <button className="bg-gray-300 px-4 py-2 rounded" onClick={() => setShowModalForPost(null)}>Batal</button>
+                                <button
+                                    className="bg-red-500 text-white px-4 py-2 rounded"
+                                    onClick={laporkanPostingan}
+                                    disabled={!selectedAlasan[selectedPost.id]}
+                                >
+                                    Kirim Laporan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Filter Kategori */}

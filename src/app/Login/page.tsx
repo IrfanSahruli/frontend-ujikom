@@ -35,7 +35,7 @@ function Login() {
 
             // Validasi role
             if (userRole === 'admin') {
-                router.push('/Admin/HomePage');
+                router.push('/Admin/Dashboard');
             } else if (userRole === 'user') {
                 router.push('/User/HomePage');
             } else {
