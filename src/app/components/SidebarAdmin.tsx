@@ -24,8 +24,8 @@ function SidebarAdmin() {
                     </li>
                     <li className='flex hover:bg-gray-50 h-[40px] rounded-md items-center'>
                         <img src="/image/message.svg" alt="logo notifikasi" className='w-[28px] h-[28px] ml-3' />
-                        <Link href="/Admin/" className="block py-1 px-2 rounded text-black">
-                            Notifikasi
+                        <Link href="/Admin/ReportPostingan" className="block py-1 px-2 rounded text-black">
+                            Laporan Postingan
                         </Link>
                     </li>
                 </ul>

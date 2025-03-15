@@ -51,7 +51,7 @@ function HomePage() {
     const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [selectedAlasan, setSelectedAlasan] = useState<Record<number, string>>({});
-    const [showModalForPost, setShowModalForPost] = useState(null);
+    const [showModalForPost, setShowModalForPost] = useState<number | null>(null);
     const router = useRouter();
 
     const alasanLaporan = [
