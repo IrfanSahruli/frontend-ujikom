@@ -11,9 +11,11 @@ interface Post {
     userId: number;
     konten: string | null;
     foto: string | null;
-    like: number;
     kategori: string | null;
     waktu: string;
+    like: number;
+    isLiked: boolean;
+    jumlahKomentar: number;
     createdAt: string;
     updatedAt: string;
     user: {
@@ -52,6 +54,8 @@ function HomePage() {
     const [showModal, setShowModal] = useState(false);
     const [selectedAlasan, setSelectedAlasan] = useState<Record<number, string>>({});
     const [showModalForPost, setShowModalForPost] = useState<number | null>(null);
+    const [likedPosts, setLikedPosts] = useState<number[]>([]);
+    const [likeCount, setLikeCount] = useState(posts.length > 0 ? posts[0].like : 0);
     const router = useRouter();
 
     const alasanLaporan = [
@@ -80,6 +84,12 @@ function HomePage() {
 
             const response = await axios.get(url, { withCredentials: true });
             setPosts(response.data.postingan);
+
+            const likedPostIds = response.data.postingan
+                .filter((post: Post) => post.isLiked)
+                .map((post: Post) => post.id);
+
+            setLikedPosts(likedPostIds);
         } catch (err) {
             setError('Terjadi kesalahan saat mengambil postingan. Silahkan coba lagi.');
         }
@@ -108,11 +118,6 @@ function HomePage() {
             alert("Terjadi kesalahan. Silakan coba lagi.");
         }
     };
-
-    useEffect(() => {
-        fetchUser();
-        fetchPosts(kategoriFilter);
-    }, [kategoriFilter]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -145,6 +150,57 @@ function HomePage() {
             setError("Gagal mengirim postingan. Pastikan server berjalan.");
         }
     };
+
+    const handelLike = async (postId: number) => {
+        try {
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_API_URL}/postingan/like/${postId}`,
+                {},
+                { withCredentials: true }
+            );
+
+            if (response.status === 200) {
+                setPosts((prevPosts) =>
+                    prevPosts.map((post) =>
+                        post.id === postId ? { ...post, like: post.like + 1 } : post
+                    )
+                );
+
+                // Tambahkan postId ke daftar likedPosts
+                setLikedPosts((prev) => [...prev, postId]);
+            }
+        } catch (error) {
+            console.error("Error liking post:", error);
+        }
+    };
+
+    const handelUnlike = async (postId: number) => {
+        try {
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_API_URL}/postingan/unlike/${postId}`,
+                {},
+                { withCredentials: true }
+            );
+
+            if (response.status === 200) {
+                setPosts((prevPosts) =>
+                    prevPosts.map((post) =>
+                        post.id === postId ? { ...post, like: post.like - 1 } : post
+                    )
+                );
+
+                // Hapus postId dari daftar likedPosts
+                setLikedPosts((prev) => prev.filter((id) => id !== postId));
+            }
+        } catch (error) {
+            console.error("Error unliking post:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchUser();
+        fetchPosts(kategoriFilter);
+    }, [kategoriFilter]);
 
     return (
         <div className="flex min-h-screen">
@@ -272,8 +328,13 @@ function HomePage() {
                                 )}
 
                                 <div className="flex items-center space-x-4 mt-4">
-                                    <button className="text-gray-600 hover:text-blue-500">👍 Like</button>
-                                    <button className="text-gray-600 hover:text-blue-500" onClick={() => router.push(`/User/PostinganDetail/${post.id}`)}>💬 Komentar</button>
+                                    <button
+                                        onClick={() => likedPosts.includes(post.id) ? handelUnlike(post.id) : handelLike(post.id)}
+                                        className={`flex items-center space-x-1 ${likedPosts.includes(post.id) ? "text-blue-500" : "text-gray-600 hover:text-blue-500"}`}
+                                    >
+                                        👍 <span className="text-sm">{post.like}</span>
+                                    </button>
+                                    <button className="text-gray-600 hover:text-blue-500" onClick={() => router.push(`/User/PostinganDetail/${post.id}`)}>💬 Komentar ({post?.jumlahKomentar || 0})</button>
                                 </div>
                             </div>
                         ))

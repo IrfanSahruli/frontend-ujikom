@@ -10,6 +10,9 @@ interface Post {
     foto: string | null;
     waktu: string | null;
     konten: string | null;
+    like: number;
+    isLiked: boolean,
+    jumlahKomentar: number;
 }
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3500';
@@ -17,6 +20,8 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://l
 const Profile = () => {
     const [user, setUser] = useState<{ id: number; username: string; fotoProfil: string | null } | null>(null);
     const [postingan, setPostingan] = useState<Post[]>([]);
+    const [likedPosts, setLikedPosts] = useState<number[]>([]);
+    const [likeCount, setLikeCount] = useState(postingan.length > 0 ? postingan[0].like : 0);
     const router = useRouter();
 
     useEffect(() => {
@@ -37,6 +42,12 @@ const Profile = () => {
                     withCredentials: true,
                 });
                 setPostingan(response.data.postingan);
+
+                const likedPostIds = response.data.postingan
+                    .filter((post: Post) => post.isLiked)
+                    .map((post: Post) => post.id);
+
+                setLikedPosts(likedPostIds);
             } catch (error) {
                 console.error("Gagal mengambil postingan saya", error);
             }
@@ -45,6 +56,52 @@ const Profile = () => {
         fetchUser();
         fetchMyPosts();
     }, []);
+
+    const handelLike = async (postId: number) => {
+        try {
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_API_URL}/postingan/like/${postId}`,
+                {},
+                { withCredentials: true }
+            );
+
+            if (response.status === 200) {
+                setPostingan((prevPosts) =>
+                    prevPosts.map((post) =>
+                        post.id === postId ? { ...post, like: post.like + 1 } : post
+                    )
+                );
+
+                // Tambahkan postId ke daftar likedPosts
+                setLikedPosts((prev) => [...prev, postId]);
+            }
+        } catch (error) {
+            console.error("Error liking post:", error);
+        }
+    };
+
+    const handelUnlike = async (postId: number) => {
+        try {
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_API_URL}/postingan/unlike/${postId}`,
+                {},
+                { withCredentials: true }
+            );
+
+            if (response.status === 200) {
+                setPostingan((prevPosts) =>
+                    prevPosts.map((post) =>
+                        post.id === postId ? { ...post, like: post.like - 1 } : post
+                    )
+                );
+
+                // Hapus postId dari daftar likedPosts
+                setLikedPosts((prev) => prev.filter((id) => id !== postId));
+            }
+        } catch (error) {
+            console.error("Error unliking post:", error);
+        }
+    };
 
     return (
         <div className="flex min-h-screen">
@@ -101,12 +158,15 @@ const Profile = () => {
                                     />
                                 )}
                                 <div className="flex items-center space-x-4 mt-4">
-                                    <button className="flex items-center space-x-1 text-gray-600 hover:text-blue-500">
-                                        👍 <span className="text-sm">Like</span>
+                                    <button
+                                        onClick={() => likedPosts.includes(post.id) ? handelUnlike(post.id) : handelLike(post.id)}
+                                        className={`flex items-center space-x-1 ${likedPosts.includes(post.id) ? "text-blue-500" : "text-gray-600 hover:text-blue-500"}`}
+                                    >
+                                        👍 <span className="text-sm">{post.like}</span>
                                     </button>
                                     <button className="flex items-center space-x-1 text-gray-600 hover:text-blue-500"
                                         onClick={() => router.push(`/User/PostinganDetail/${post.id}`)}>
-                                        💬 <span className="text-sm">Komentar</span>
+                                        💬 <span className="text-sm">Komentar ({post?.jumlahKomentar || 0})</span>
                                     </button>
                                 </div>
                             </div>

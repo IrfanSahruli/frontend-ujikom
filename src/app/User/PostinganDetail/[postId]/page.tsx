@@ -9,6 +9,8 @@ interface Post {
     konten: string;
     foto: string | null;
     waktu: string;
+    like: number;
+    jumlahKomentar: number;
     user: {
         id: number;
         username: string;
@@ -48,49 +50,46 @@ function PostinganDetail() {
     const [newComment, setNewComment] = useState<{ [key: number]: string }>({});
     const [newReply, setNewReply] = useState<{ [key: number]: string }>({});
     const [replyVisibility, setReplyVisibility] = useState<{ [key: number]: boolean }>({});
+    const [liked, setLiked] = useState(false);
+    const [likeCount, setLikeCount] = useState(post?.like || 0);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
-    useEffect(() => {
-        const fetchPost = async () => {
-            try {
-                const response = await axios.get(
-                    `${process.env.NEXT_PUBLIC_API_URL}/postingan/${params.postId}`,
-                    { withCredentials: true }
-                );
-                setPost(response.data.postingan);
-            } catch (error) {
-                console.error("Gagal mengambil detail postingan", error);
-            }
-        };
-
-        const fetchComments = async () => {
-            try {
-                const response = await axios.get(
-                    `${process.env.NEXT_PUBLIC_API_URL}/komentar?postId=${params.postId}`,
-                    { withCredentials: true }
-                );
-
-                // Ubah array komentar menjadi objek dengan postId sebagai key
-                const groupedComments: { [key: number]: Comment[] } = {};
-                response.data.komentar.forEach((comment: Comment) => {
-                    if (!groupedComments[comment.postId]) {
-                        groupedComments[comment.postId] = [];
-                    }
-                    groupedComments[comment.postId].push(comment);
-                });
-
-                setComments(groupedComments);
-            } catch (error) {
-                console.error("Gagal mengambil komentar", error);
-            }
-        };
-
-        if (params.postId) {
-            fetchPost();
-            fetchComments();
+    const fetchPost = async () => {
+        try {
+            const response = await axios.get(
+                `${process.env.NEXT_PUBLIC_API_URL}/postingan/${params.postId}`,
+                { withCredentials: true }
+            );
+            const postData = response.data.postingan;
+            setPost(postData);
+            setLikeCount(postData.like);
+        } catch (error) {
+            console.error("Gagal mengambil detail postingan", error);
         }
-    }, [params.postId]);
+    };
+
+    const fetchComments = async () => {
+        try {
+            const response = await axios.get(
+                `${process.env.NEXT_PUBLIC_API_URL}/komentar?postId=${params.postId}`,
+                { withCredentials: true }
+            );
+
+            // Ubah array komentar menjadi objek dengan postId sebagai key
+            const groupedComments: { [key: number]: Comment[] } = {};
+            response.data.komentar.forEach((comment: Comment) => {
+                if (!groupedComments[comment.postId]) {
+                    groupedComments[comment.postId] = [];
+                }
+                groupedComments[comment.postId].push(comment);
+            });
+
+            setComments(groupedComments);
+        } catch (error) {
+            console.error("Gagal mengambil komentar", error);
+        }
+    };
 
     const fetchReplies = async (komentarId: number) => {
         try {
@@ -154,6 +153,49 @@ function PostinganDetail() {
         }
     };
 
+    const handelLike = async () => {
+        if (!post) return;
+        try {
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_API_URL}/postingan/like/${params.postId}`,
+                {},
+                { withCredentials: true }
+            );
+
+            if (response.status === 200) {
+                setLiked(true);
+                setLikeCount((prev) => prev + 1);
+            }
+        } catch (error) {
+            console.error("Error liking post:", error);
+        }
+    };
+
+    const handelUnlike = async () => {
+        if (!post) return;
+        try {
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_API_URL}/postingan/unlike/${params.postId}`,
+                {},
+                { withCredentials: true }
+            );
+
+            if (response.status === 200) {
+                setLiked(false);
+                setLikeCount((prev) => prev - 1);
+            }
+        } catch (error) {
+            console.error("Error unliking post:", error);
+        }
+    };
+
+    useEffect(() => {
+        if (params.postId) {
+            fetchPost();
+            fetchComments();
+        }
+    }, [params.postId]);
+
     if (!post) return <p>Loading...</p>;
 
     return (
@@ -181,11 +223,14 @@ function PostinganDetail() {
                 <p className="mb-4">{post.konten}</p>
                 {post.foto && <img src={`${apiUrl}${post.foto}`} alt="Foto Postingan" className="rounded-md" />}
                 <div className="flex items-center space-x-4 mt-4">
-                    <button className="flex items-center space-x-1 text-gray-600 hover:text-blue-500">
-                        👍 <span className="text-sm">Like</span>
+                    <button
+                        onClick={liked ? handelUnlike : handelLike}
+                        className={`flex items-center space-x-1 ${liked ? "text-blue-500" : "text-gray-600 hover:text-blue-500"}`}
+                    >
+                        👍 <span className="text-sm">{likeCount}</span>
                     </button>
                     <button className="flex items-center space-x-1 text-gray-600 hover:text-blue-500">
-                        💬 <span className="text-sm">Komentar</span>
+                        💬 <span className="text-sm">Komentar ({post?.jumlahKomentar || 0})</span>
                     </button>
                 </div>
                 <hr className="mt-5" />
