@@ -213,10 +213,10 @@ function HomePage() {
 
                 {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
-                <div className="w-[800px] bg-white py-4 rounded-lg mb-5">
+                <div className="w-[800px] bg-white py-4 rounded-lg mb-5 ml-7">
                     <div
                         onClick={() => setIsOpen(true)}
-                        className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100"
+                        className="flex items-center p-3 border border-gray-300 rounded-lg shadow-lg hover:shadow-xl hover:bg-gray-100 transition duration-300"
                     >
                         {user ? (
                             <img
@@ -231,7 +231,7 @@ function HomePage() {
                     </div>
 
                     {isOpen && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+                        <div className="fixed inset-0 bg-black bg-opacity-50 z-10 flex justify-center items-center">
                             <div className="bg-white w-[500px] p-6 rounded-lg shadow-lg">
                                 <h2 className="text-xl font-semibold mb-4">Buat Postingan Baru</h2>
                                 <form onSubmit={handleSubmit}>
@@ -286,12 +286,12 @@ function HomePage() {
                     )}
                 </div>
 
-                <div className="w-[800px] space-y-4">
+                <div className="w-[800px] space-y-4 ml-7">
                     {posts.length === 0 ? (
                         <p className="text-center text-gray-500">Tidak ada postingan.</p>
                     ) : (
                         posts.map((post) => (
-                            <div key={post.id} className="bg-white p-6 rounded-lg border relative">
+                            <div key={post.id} className="bg-white p-6 rounded-lg shadow-lg border hover:shadow-2xl transition duration-300">
                                 <div className="flex justify-between">
                                     <Link href={`/User/Profile/${post.user.id}`} className="flex items-center">
                                         <img
@@ -301,7 +301,9 @@ function HomePage() {
                                         />
                                         <div>
                                             <span className="text-[18px] hover:underline">{post.user?.username}</span>
-                                            <p className='text-gray-500 text-[10px] mt-0'>{post.waktu}</p>
+                                            <p className='text-gray-500 text-xs bg-gray-100 px-2 py-1 rounded-full w-max'>
+                                                {post.waktu}
+                                            </p>
                                         </div>
                                     </Link>
 
@@ -330,11 +332,14 @@ function HomePage() {
                                 <div className="flex items-center space-x-4 mt-4">
                                     <button
                                         onClick={() => likedPosts.includes(post.id) ? handelUnlike(post.id) : handelLike(post.id)}
-                                        className={`flex items-center space-x-1 ${likedPosts.includes(post.id) ? "text-blue-500" : "text-gray-600 hover:text-blue-500"}`}
+                                        className={`flex items-center space-x-1 transition-transform duration-200 transform hover:scale-110 ${likedPosts.includes(post.id) ? "text-blue-500" : "text-gray-600 hover:text-blue-500"}`}
                                     >
                                         👍 <span className="text-sm">{post.like}</span>
                                     </button>
-                                    <button className="text-gray-600 hover:text-blue-500" onClick={() => router.push(`/User/PostinganDetail/${post.id}`)}>💬 Komentar ({post?.jumlahKomentar || 0})</button>
+                                    <button className="flex items-center space-x-1 transition-transform duration-200 transform hover:scale-110 text-gray-600 hover:text-blue-500"
+                                        onClick={() => router.push(`/User/PostinganDetail/${post.id}`)}>
+                                        💬 Komentar ({post?.jumlahKomentar || 0})
+                                    </button>
                                 </div>
                             </div>
                         ))
@@ -343,7 +348,7 @@ function HomePage() {
 
                 {/* Modal laporan */}
                 {selectedPost && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+                    <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-20">
                         <div className="bg-white p-6 rounded-lg shadow-lg">
                             <h2 className="text-lg font-semibold">Laporkan Postingan</h2>
                             <p className="text-sm text-gray-600">Pilih alasan pelaporan:</p>
