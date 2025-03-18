@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { ArrowLeft } from 'lucide-react';
 import axios from "axios";
 import Sidebar from "@/app/components/Sidebar";
 
@@ -201,11 +202,14 @@ function PostinganDetail() {
     return (
         <div className="flex">
             <Sidebar />
-            <div className="p-6 ml-10 mt-10 mb-10 bg-white rounded-lg border w-[800px]">
-                <button onClick={() => router.back()} className="text-blue-500 mb-4">
-                    ← Kembali
+            <div className="relative p-6 ml-16 mt-10 mb-10 bg-white rounded-lg border w-[800px]">
+                <button
+                    className="absolute top-4 left-4 p-2 rounded-full hover:bg-gray-300 transition"
+                    onClick={() => router.back()}
+                >
+                    <ArrowLeft size={24} />
                 </button>
-                <div className="flex items-center mb-4">
+                <div className="flex items-center mb-4 mt-10">
                     <img
                         src={
                             post.user.fotoProfil

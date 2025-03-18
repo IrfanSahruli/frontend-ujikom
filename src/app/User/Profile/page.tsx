@@ -111,7 +111,7 @@ const Profile = () => {
 
             <div className="w-3/4 p-5 flex flex-col items-center">
                 {/* Profil Header */}
-                <div className="relative w-[800px] flex flex-col items-center text-center bg-white p-5 rounded-b-2xl shadow-md">
+                <div className="relative mt-7 ml-6 w-[800px] flex flex-col items-center text-center bg-white p-5 rounded-2xl shadow-md">
                     {/* Tombol Panah Kembali */}
                     <button
                         className="absolute top-1 left-1 p-2 rounded-full hover:bg-gray-200 transition"

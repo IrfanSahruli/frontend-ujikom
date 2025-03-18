@@ -12,29 +12,30 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://l
 
 function EditProfil() {
     const router = useRouter();
-    const [userData, setUserData] = useState({
-        username: '',
-        email: '',
-        noHp: '',
-        fotoProfil: ''
-    });
+    const [userData, setUserData] = useState<{
+        username: string;
+        email: string;
+        noHp: string;
+        fotoProfil: string;
+    } | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [isDialogOpen, setIsDialogOpen] = useState(false); // State untuk modal
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     useEffect(() => {
         axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, { withCredentials: true })
             .then(response => {
                 setUserData({
-                    username: response.data.username,
-                    email: response.data.email,
-                    noHp: response.data.noHp,
-                    fotoProfil: response.data.fotoProfil
+                    username: response.data.username ?? '',
+                    email: response.data.email ?? '',
+                    noHp: response.data.noHp ?? '',
+                    fotoProfil: response.data.fotoProfil ?? ''
                 });
             })
             .catch(error => console.error('Error mengambil data user:', error));
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!userData) return;
         setUserData({ ...userData, [e.target.name]: e.target.value });
     };
 
@@ -46,9 +47,9 @@ function EditProfil() {
 
     const handleSubmit = async () => {
         const formData = new FormData();
-        formData.append('username', userData.username);
-        formData.append('email', userData.email);
-        formData.append('noHp', userData.noHp);
+        formData.append('username', userData?.username ?? '');
+        formData.append('email', userData?.email ?? '');
+        formData.append('noHp', userData?.noHp ?? '');
         if (selectedFile) {
             formData.append('fotoProfil', selectedFile);
         }
@@ -60,10 +61,10 @@ function EditProfil() {
             });
 
             if (selectedFile) {
-                setUserData((prevData) => ({
+                setUserData((prevData) => prevData ? {
                     ...prevData,
                     fotoProfil: URL.createObjectURL(selectedFile)
-                }));
+                } : null);
             }
 
             alert(response.data.message);
@@ -77,78 +78,87 @@ function EditProfil() {
         <div className="flex min-h-screen">
             <Sidebar />
 
-            <div className='relative ml-28 mt-5 mb-5 border rounded-md w-[800px] text-center p-6'>
+            <div className="relative ml-28 mt-10 p-8 bg-white shadow-lg rounded-lg w-[800px] mx-auto">
                 <button
-                    className="absolute top-4 left-4 p-2 rounded-full hover:bg-gray-200 transition"
+                    className="absolute top-4 left-4 p-2 rounded-full hover:bg-gray-300 transition"
                     onClick={() => router.back()}
                 >
                     <ArrowLeft size={24} />
                 </button>
 
-                <h1 className='mt-2 font-bold text-[30px]'>Edit Profile</h1>
+                <h1 className="text-center text-3xl font-bold text-gray-800 mb-6">Edit Profil</h1>
 
-                <img
-                    src={userData.fotoProfil ? `${apiUrl}${userData.fotoProfil}` : "/default-avatar.png"}
-                    alt="Foto Profil"
-                    className='rounded-full border w-[200px] h-[200px] mx-auto mt-10'
-                />
+                <div className="flex flex-col items-center">
+                    <img
+                        src={userData?.fotoProfil ? `${apiUrl}${userData.fotoProfil}` : "/default-avatar.png"}
+                        alt="Foto Profil"
+                        className="rounded-full border w-[150px] h-[150px] shadow-md object-cover"
+                    />
 
-                <form onSubmit={(e) => e.preventDefault()}>
-                    <div className='mb-4 mt-7'>
-                        <label className='block text-[20px] font-medium text-black'>Foto Profil</label>
-                        <input type="file" onChange={handleFileChange} />
-                    </div>
+                    <label className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md cursor-pointer transition">
+                        Pilih Foto
+                        <input type="file" className="hidden" onChange={handleFileChange} />
+                    </label>
+                </div>
 
-                    <div className='mb-4 mt-7'>
-                        <label className='block text-[20px] font-medium text-black'>Username</label>
+                <form onSubmit={(e) => e.preventDefault()} className="mt-6">
+                    <div className="mb-4">
+                        <label className="block text-lg font-semibold text-gray-700">Username</label>
                         <input
-                            type='text'
-                            name='username'
-                            value={userData.username}
+                            type="text"
+                            name="username"
+                            value={userData?.username ?? ''}
                             onChange={handleChange}
-                            className='mt-1 block w-[500px] px-3 py-2 border rounded-md mx-auto'
+                            className="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-300 transition"
                         />
                     </div>
 
-                    <div className='mb-4 mt-7'>
-                        <label className='block text-[20px] font-medium text-black'>Email</label>
+                    <div className="mb-4">
+                        <label className="block text-lg font-semibold text-gray-700">Email</label>
                         <input
-                            type='email'
-                            name='email'
-                            value={userData.email}
+                            type="email"
+                            name="email"
+                            value={userData?.email ?? ''}
                             onChange={handleChange}
-                            className='mt-1 block w-[500px] px-3 py-2 border rounded-md mx-auto'
+                            className="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-300 transition"
                         />
                     </div>
 
-                    <div className='mb-4 mt-7'>
-                        <label className='block text-[20px] font-medium text-black'>No Hp</label>
+                    <div className="mb-4">
+                        <label className="block text-lg font-semibold text-gray-700">No Hp</label>
                         <input
-                            type='text'
-                            name='noHp'
-                            value={userData.noHp}
+                            type="text"
+                            name="noHp"
+                            value={userData?.noHp ?? ''}
                             onChange={handleChange}
-                            className='mt-1 block w-[500px] px-3 py-2 border rounded-md mx-auto'
+                            className="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-300 transition"
                         />
                     </div>
 
-                    {/* Button untuk membuka modal */}
+                    {/* Modal Konfirmasi */}
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
-                            <button type="button" className='mt-5 mb-3 rounded-md border w-[150px] p-2 bg-blue-500 text-white'>
+                            <button
+                                type="button"
+                                className="mt-5 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md transition"
+                            >
                                 Simpan Perubahan
                             </button>
                         </DialogTrigger>
 
-                        {/* Modal Konfirmasi */}
-                        <DialogContent>
+                        <DialogContent className="bg-white p-6 rounded-lg shadow-lg">
                             <DialogHeader>
-                                <DialogTitle>Konfirmasi Perubahan</DialogTitle>
+                                <DialogTitle className="text-xl font-semibold text-gray-800">Konfirmasi Perubahan</DialogTitle>
                                 <p className="text-sm text-gray-500">Apakah Anda yakin ingin menyimpan perubahan ini?</p>
                             </DialogHeader>
-                            <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
-                                <Button onClick={() => { setIsDialogOpen(false); handleSubmit(); }}>
+                            <DialogFooter className="flex justify-end space-x-3">
+                                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-gray-300">
+                                    Batal
+                                </Button>
+                                <Button
+                                    onClick={() => { setIsDialogOpen(false); handleSubmit(); }}
+                                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                                >
                                     Simpan
                                 </Button>
                             </DialogFooter>
@@ -157,7 +167,7 @@ function EditProfil() {
                 </form>
             </div>
         </div>
-    )
+    );
 }
 
 export default EditProfil;

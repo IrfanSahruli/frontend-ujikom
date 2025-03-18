@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Dialog } from '@headlessui/react';
-import { LayoutDashboard, Flag, LogOut } from 'lucide-react';
+import { LayoutDashboard, Flag, LogOut, User } from 'lucide-react';
 
 function SidebarAdmin() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,6 +32,7 @@ function SidebarAdmin() {
                 <nav className="flex-1 p-4 space-y-4">
                     <SidebarItem href="/Admin/Dashboard" icon={<LayoutDashboard size={24} />} label="Dashboard" />
                     <SidebarItem href="/Admin/ReportPostingan" icon={<Flag size={24} />} label="Laporan Postingan" />
+                    <SidebarItem href="/Admin/UserList" icon={<User size={24} />} label="User" />
                 </nav>
 
                 {/* Tombol Logout */}

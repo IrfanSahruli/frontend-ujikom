@@ -56,6 +56,7 @@ function HomePage() {
     const [showModalForPost, setShowModalForPost] = useState<number | null>(null);
     const [likedPosts, setLikedPosts] = useState<number[]>([]);
     const [likeCount, setLikeCount] = useState(posts.length > 0 ? posts[0].like : 0);
+    const [sortBy, setSortBy] = useState("terbaru");
     const router = useRouter();
 
     const alasanLaporan = [
@@ -80,7 +81,7 @@ function HomePage() {
         try {
             const url = kategoriFilter
                 ? `${process.env.NEXT_PUBLIC_API_URL}/postingan/kategori/${kategoriFilter}`
-                : `${process.env.NEXT_PUBLIC_API_URL}/postingan`;
+                : `${process.env.NEXT_PUBLIC_API_URL}/allPostingan?sort=${sortBy}`;
 
             const response = await axios.get(url, { withCredentials: true });
             setPosts(response.data.postingan);
@@ -197,10 +198,15 @@ function HomePage() {
         }
     };
 
+    const handleSortChange = (sortType: string) => {
+        setSortBy(sortType);
+        fetchPosts(kategoriFilter); // Ambil postingan baru sesuai sorting
+    };
+
     useEffect(() => {
         fetchUser();
         fetchPosts(kategoriFilter);
-    }, [kategoriFilter]);
+    }, [kategoriFilter, sortBy]);
 
     return (
         <div className="flex min-h-screen">
@@ -284,6 +290,22 @@ function HomePage() {
                             </div>
                         </div>
                     )}
+                </div>
+
+                <div className='ml-9 mb-5'>
+                    <button
+                        className={`rounded border text-[20px] w-[100px] ${sortBy === "terbaru" ? "bg-gray-500 text-white" : ""}`}
+                        onClick={() => handleSortChange("terbaru")}
+                    >
+                        Terbaru
+                    </button>
+
+                    <button
+                        className={`ml-4 rounded border text-[20px] w-[100px] ${sortBy === "populer" ? "bg-gray-500 text-white" : ""}`}
+                        onClick={() => handleSortChange("populer")}
+                    >
+                        Populer
+                    </button>
                 </div>
 
                 <div className="w-[800px] space-y-4 ml-7">
