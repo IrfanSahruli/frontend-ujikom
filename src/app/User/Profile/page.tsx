@@ -11,7 +11,7 @@ interface Post {
     userId: number;
     foto: string | null;
     waktu: string | null;
-    konten: string | null;
+    caption: string | null;
     like: number;
     isLiked: boolean,
     jumlahKomentar: number;
@@ -43,15 +43,44 @@ const Profile = () => {
                 const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/myPostingan`, {
                     withCredentials: true,
                 });
-                setPostingan(response.data.postingan);
 
-                const likedPostIds = response.data.postingan
-                    .filter((post: Post) => post.isLiked)
-                    .map((post: Post) => post.id);
+                console.log("Response dari API:", response.data);
 
+                if (!response.data.postingan || !Array.isArray(response.data.postingan)) {
+                    console.error("Data postingan tidak valid:", response.data);
+                    setPostingan([]);
+                    return;
+                }
+
+                const posts = response.data.postingan; // Ambil array postingan dari response
+
+                const likedStatuses = await Promise.all(
+                    posts.map(async (post: Post) => {
+                        try {
+                            const likeResponse = await axios.get(
+                                `${process.env.NEXT_PUBLIC_API_URL}/like/status/${post.id}`,
+                                { withCredentials: true }
+                            );
+                            return { id: post.id, liked: likeResponse.data.liked, likeCount: likeResponse.data.likeCount };
+                        } catch (error) {
+                            console.error(`Error fetching like status for post ${post.id}:`, error);
+                            return { id: post.id, liked: false, likeCount: post.like };
+                        }
+                    })
+                );
+
+                const updatedPosts = posts.map((post: Post) => {
+                    const likeStatus = likedStatuses.find((status) => status.id === post.id);
+                    return { ...post, isLiked: likeStatus?.liked || false, like: likeStatus?.likeCount || post.like };
+                });
+
+                setPostingan(updatedPosts);
+
+                const likedPostIds = likedStatuses.filter((status) => status.liked).map((status) => status.id);
                 setLikedPosts(likedPostIds);
             } catch (error) {
                 console.error("Gagal mengambil postingan saya", error);
+                setPostingan([]);
             }
         };
 
@@ -59,10 +88,10 @@ const Profile = () => {
         fetchMyPosts();
     }, []);
 
-    const handelLike = async (postId: number) => {
+    const toggleLike = async (postId: number) => {
         try {
             const response = await axios.post(
-                `${process.env.NEXT_PUBLIC_API_URL}/postingan/like/${postId}`,
+                `${process.env.NEXT_PUBLIC_API_URL}/like/${postId}`,
                 {},
                 { withCredentials: true }
             );
@@ -70,38 +99,20 @@ const Profile = () => {
             if (response.status === 200) {
                 setPostingan((prevPosts) =>
                     prevPosts.map((post) =>
-                        post.id === postId ? { ...post, like: post.like + 1 } : post
+                        post.id === postId
+                            ? { ...post, like: response.data.like, isLiked: !post.isLiked }
+                            : post
                     )
                 );
 
-                // Tambahkan postId ke daftar likedPosts
-                setLikedPosts((prev) => [...prev, postId]);
-            }
-        } catch (error) {
-            console.error("Error liking post:", error);
-        }
-    };
-
-    const handelUnlike = async (postId: number) => {
-        try {
-            const response = await axios.post(
-                `${process.env.NEXT_PUBLIC_API_URL}/postingan/unlike/${postId}`,
-                {},
-                { withCredentials: true }
-            );
-
-            if (response.status === 200) {
-                setPostingan((prevPosts) =>
-                    prevPosts.map((post) =>
-                        post.id === postId ? { ...post, like: post.like - 1 } : post
-                    )
+                setLikedPosts((prev) =>
+                    prev.includes(postId)
+                        ? prev.filter((id) => id !== postId) // Jika sudah like, hapus dari state
+                        : [...prev, postId] // Jika belum like, tambahkan ke state
                 );
-
-                // Hapus postId dari daftar likedPosts
-                setLikedPosts((prev) => prev.filter((id) => id !== postId));
             }
         } catch (error) {
-            console.error("Error unliking post:", error);
+            console.error("Error toggling like:", error);
         }
     };
 
@@ -164,7 +175,7 @@ const Profile = () => {
                                         </p>
                                     </div>
                                 </div>
-                                <p className="mt-2">{post.konten}</p>
+                                <p className="mt-2">{post.caption}</p>
                                 {post.foto && (
                                     <img
                                         src={`${apiUrl}${post.foto}`}
@@ -174,8 +185,9 @@ const Profile = () => {
                                 )}
                                 <div className="flex items-center space-x-4 mt-4">
                                     <button
-                                        onClick={() => likedPosts.includes(post.id) ? handelUnlike(post.id) : handelLike(post.id)}
-                                        className={`flex items-center space-x-1 transition-transform duration-200 transform hover:scale-110 ${likedPosts.includes(post.id) ? "text-blue-500" : "text-gray-600 hover:text-blue-500"}`}
+                                        onClick={() => toggleLike(post.id)}
+                                        className={`flex items-center space-x-1 transition-transform duration-200 transform hover:scale-110 ${post.isLiked ? "text-blue-500" : "text-gray-600 hover:text-blue-500"
+                                            }`}
                                     >
                                         👍 <span className="text-sm">{post.like}</span>
                                     </button>

@@ -13,18 +13,21 @@ interface User {
 
 interface Postingan {
     id: number;
-    konten: string;
+    caption: string;
     foto: string | null;
+    statusPostingan: string;
     user: User;
 }
 
 interface Laporan {
     id: number;
     alasan: string;
-    status: string;
+    statusLaporan: string;
     user: User;
     postingan: Postingan;
 }
+
+const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3500';
 
 function ReportPostingan() {
     const [laporan, setLaporan] = useState<Laporan[]>([]);
@@ -40,6 +43,7 @@ function ReportPostingan() {
             const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/laporkanPostingan`, {
                 withCredentials: true,
             });
+
             setLaporan(response.data.laporan);
         } catch (error) {
             console.error('Gagal mengambil data laporan postingan', error);
@@ -53,12 +57,12 @@ function ReportPostingan() {
 
         try {
             await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/laporkanPostingan/${selectedLaporan.id}`,
-                { status: newStatus },
+                { statusLaporan: newStatus },
                 { withCredentials: true }
             );
 
             setLaporan(prevLaporan => prevLaporan.map(lapor =>
-                lapor.id === selectedLaporan.id ? { ...lapor, status: newStatus } : lapor
+                lapor.id === selectedLaporan.id ? { ...lapor, statusLaporan: newStatus } : lapor
             ));
 
             setSelectedLaporan(null);
@@ -86,8 +90,9 @@ function ReportPostingan() {
                                         <th className="border border-gray-300 p-3">ID</th>
                                         <th className="border border-gray-300 p-3">Username</th>
                                         <th className="border border-gray-300 p-3">Postingan</th>
+                                        <th className="border border-gray-300 p-3">Status Postingan</th>
                                         <th className="border border-gray-300 p-3">Alasan</th>
-                                        <th className="border border-gray-300 p-3">Status</th>
+                                        <th className="border border-gray-300 p-3">Status Laporan</th>
                                         <th className="border border-gray-300 p-3">Aksi</th>
                                     </tr>
                                 </thead>
@@ -98,11 +103,20 @@ function ReportPostingan() {
                                                 <td className="border border-gray-300 p-3">{lapor.id}</td>
                                                 <td className="border border-gray-300 p-3">{lapor.user?.username}</td>
                                                 <td className="border border-gray-300 p-3">
-                                                    <img src={lapor.postingan?.foto ?? undefined} alt="Post" className="w-16 h-16 rounded-md" />
-                                                    <p>{lapor.postingan?.konten}</p>
+                                                    <div className="flex flex-col items-center">
+                                                        {lapor.postingan?.foto && (
+                                                            <img
+                                                                src={`${apiUrl}${lapor.postingan?.foto}`}
+                                                                alt={`Foto ${lapor.postingan?.id}`}
+                                                                className="w-[120px] h-[120px] rounded-md mt-2 object-cover"
+                                                            />
+                                                        )}
+                                                        <p className="mt-2 text-sm text-gray-700">{lapor.postingan?.caption}</p>
+                                                    </div>
                                                 </td>
+                                                <td className="border border-gray-300 p-3 font-semibold text-green-600">{lapor.postingan?.statusPostingan}</td>
                                                 <td className="border border-gray-300 p-3">{lapor.alasan}</td>
-                                                <td className="border border-gray-300 p-3 font-semibold text-blue-600">{lapor.status}</td>
+                                                <td className="border border-gray-300 p-3 font-semibold text-blue-600">{lapor.statusLaporan}</td>
                                                 <td className="border border-gray-300 p-3">
                                                     <Button onClick={() => setSelectedLaporan(lapor)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-transform hover:scale-105">
                                                         Edit Status
@@ -127,12 +141,12 @@ function ReportPostingan() {
                     <div className="bg-white p-6 rounded-lg w-96 shadow-lg">
                         <h2 className="text-xl font-bold mb-4">Ubah Status Laporan</h2>
                         <p className="mb-4">Laporan dari <b>{selectedLaporan.user.username}</b> tentang postingan:</p>
-                        <p className="mb-2">{selectedLaporan.postingan.konten}</p>
+                        <p className="mb-2">{selectedLaporan.postingan.caption}</p>
 
                         <label className="block font-medium mb-2">Pilih Status:</label>
                         <select
                             className="w-full border p-2 rounded"
-                            value={selectedLaporan.status}
+                            value={selectedLaporan.statusLaporan}
                             onChange={(e) => handleStatusChange(e.target.value)}
                         >
                             <option value="pending">Pending</option>
@@ -143,7 +157,7 @@ function ReportPostingan() {
                             <button className="mr-2 px-4 py-2 bg-gray-300 rounded" onClick={() => setSelectedLaporan(null)}>
                                 Batal
                             </button>
-                            <button className="px-4 py-2 bg-blue-500 text-white rounded" onClick={() => handleStatusChange(selectedLaporan.status)}>
+                            <button className="px-4 py-2 bg-blue-500 text-white rounded" onClick={() => handleStatusChange(selectedLaporan.statusLaporan)}>
                                 Simpan
                             </button>
                         </div>

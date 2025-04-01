@@ -10,8 +10,9 @@ type User = {
     username: string;
     email: string;
     noHp: number;
-    fotoProfil?: string; // opsional jika ada foto profil
+    fotoProfil?: string;
     role: string;
+    status: string;
 };
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3500';
@@ -79,7 +80,7 @@ function UserList() {
                                                 <td className="border border-gray-300 p-3">{user.username}</td>
                                                 <td className="border border-gray-300 p-3">{user.email}</td>
                                                 <td className="border border-gray-300 p-3">{user.noHp}</td>
-                                                <td className="border border-gray-300 p-3 text-green-600 font-semibold">Aktif</td>
+                                                <td className="border border-gray-300 p-3 text-green-600 font-semibold">{user.status}</td>
                                                 <td className="border border-gray-300 p-3">
                                                     <Button
                                                         onClick={() => handleDelete(user.id)}

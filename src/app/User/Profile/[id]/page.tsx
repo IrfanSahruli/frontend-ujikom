@@ -10,7 +10,7 @@ interface Post {
     id: number;
     foto: string | null;
     waktu: string | null;
-    konten: string | null;
+    caption: string | null;
     like: number;
     isLiked: boolean;
     jumlahKomentar: number;
@@ -35,14 +35,23 @@ export default function UserProfile() {
     useEffect(() => {
         const fetchUserProfile = async () => {
             try {
-                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/profile/${params.id}`, { withCredentials: true });
+                const response = await axios.get(
+                    `${process.env.NEXT_PUBLIC_API_URL}/profile/${params.id}`,
+                    { withCredentials: true }
+                );
                 setUser(response.data.user);
                 setPostingan(response.data.user.postingan || []);
 
-                const likedPostIds = response.data.user.postingan
-                    .filter((post: Post) => post.isLiked)
-                    .map((post: Post) => post.id);
+                // Ambil daftar post yang sudah di-like oleh user dari API `/like`
+                const likedPromises = response.data.user.postingan.map(async (post: Post) => {
+                    const likeStatus = await axios.get(
+                        `${process.env.NEXT_PUBLIC_API_URL}/like/status/${post.id}`,
+                        { withCredentials: true }
+                    );
+                    return likeStatus.data.liked ? post.id : null;
+                });
 
+                const likedPostIds = (await Promise.all(likedPromises)).filter((id) => id !== null);
                 setLikedPosts(likedPostIds);
             } catch (error) {
                 console.error('Gagal mengambil data user', error);
@@ -52,10 +61,10 @@ export default function UserProfile() {
         fetchUserProfile();
     }, [params.id]);
 
-    const handelLike = async (postId: number) => {
+    const handleLikeToggle = async (postId: number) => {
         try {
             const response = await axios.post(
-                `${process.env.NEXT_PUBLIC_API_URL}/postingan/like/${postId}`,
+                `${process.env.NEXT_PUBLIC_API_URL}/like/${postId}`,
                 {},
                 { withCredentials: true }
             );
@@ -63,38 +72,18 @@ export default function UserProfile() {
             if (response.status === 200) {
                 setPostingan((prevPosts) =>
                     prevPosts.map((post) =>
-                        post.id === postId ? { ...post, like: post.like + 1 } : post
+                        post.id === postId ? { ...post, like: response.data.like } : post
                     )
                 );
 
-                // Tambahkan postId ke daftar likedPosts
-                setLikedPosts((prev) => [...prev, postId]);
-            }
-        } catch (error) {
-            console.error("Error liking post:", error);
-        }
-    };
-
-    const handelUnlike = async (postId: number) => {
-        try {
-            const response = await axios.post(
-                `${process.env.NEXT_PUBLIC_API_URL}/postingan/unlike/${postId}`,
-                {},
-                { withCredentials: true }
-            );
-
-            if (response.status === 200) {
-                setPostingan((prevPosts) =>
-                    prevPosts.map((post) =>
-                        post.id === postId ? { ...post, like: post.like - 1 } : post
-                    )
+                setLikedPosts((prev) =>
+                    prev.includes(postId)
+                        ? prev.filter((id) => id !== postId) // Remove dari likedPosts jika sudah like
+                        : [...prev, postId] // Tambahkan ke likedPosts jika belum like
                 );
-
-                // Hapus postId dari daftar likedPosts
-                setLikedPosts((prev) => prev.filter((id) => id !== postId));
             }
         } catch (error) {
-            console.error("Error unliking post:", error);
+            console.error("Error updating like status:", error);
         }
     };
 
@@ -153,7 +142,7 @@ export default function UserProfile() {
                                         </p>
                                     </div>
                                 </div>
-                                <p className="mt-2">{post.konten}</p>
+                                <p className="mt-2">{post.caption}</p>
                                 {post.foto && (
                                     <img
                                         src={`${apiUrl}${post.foto}`}
@@ -163,8 +152,9 @@ export default function UserProfile() {
                                 )}
                                 <div className="flex items-center space-x-4 mt-4">
                                     <button
-                                        onClick={() => likedPosts.includes(post.id) ? handelUnlike(post.id) : handelLike(post.id)}
-                                        className={`flex items-center space-x-1 transition-transform duration-200 transform hover:scale-110 ${likedPosts.includes(post.id) ? "text-blue-500" : "text-gray-600 hover:text-blue-500"}`}
+                                        onClick={() => handleLikeToggle(post.id)}
+                                        className={`flex items-center space-x-1 transition-transform duration-200 transform hover:scale-110 
+                                        ${likedPosts.includes(post.id) ? "text-blue-500" : "text-gray-600 hover:text-blue-500"}`}
                                     >
                                         👍 <span className="text-sm">{post.like}</span>
                                     </button>
