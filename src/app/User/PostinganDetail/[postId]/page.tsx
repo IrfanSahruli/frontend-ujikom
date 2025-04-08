@@ -4,6 +4,9 @@ import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft } from 'lucide-react';
 import axios from "axios";
 import Sidebar from "@/app/components/Sidebar";
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/id';
 
 interface Post {
     id: number;
@@ -41,6 +44,9 @@ interface Reply {
     };
     childBalasan?: Reply[];
 }
+
+dayjs.extend(relativeTime);
+dayjs.locale('id');
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3500';
 
@@ -291,7 +297,9 @@ function PostinganDetail() {
                     />
                     <div>
                         <p className="font-semibold">{post.user.username}</p>
-                        <p className="text-gray-500 text-sm">{post.waktu}</p>
+                        <p className="text-gray-500 text-xs bg-gray-100 px-2 py-1 rounded-full w-max">
+                            {dayjs(post?.waktu).fromNow()}
+                        </p>
                     </div>
                 </div>
                 <p className="mb-4">{post.caption}</p>
@@ -378,16 +386,16 @@ function PostinganDetail() {
                                                                         ))}
 
                                                                         {/* Input untuk Balasan Balasan */}
-                                                                        <div className="flex items-center mt-2">
-                                                                            <input
-                                                                                type="text"
+                                                                        <div className="flex items-center mt-2 gap-2">
+                                                                            <textarea
                                                                                 value={newReply[reply.id] || ""}
                                                                                 onChange={(e) => setNewReply((prev) => ({ ...prev, [reply.id]: e.target.value }))}
-                                                                                className="border rounded p-1 flex-1 text-sm"
+                                                                                className="border rounded p-1 flex-1 text-sm resize-none overflow-y-auto"
                                                                                 placeholder="Tulis balasan..."
+                                                                                rows={1}
                                                                             />
                                                                             <button
-                                                                                className="bg-blue-500 text-white px-3 py-1 rounded text-xs ml-2"
+                                                                                className="bg-blue-500 text-white px-3 py-1 rounded text-xs"
                                                                                 onClick={() => addSubReply(reply.id, comment.id, reply.user.username)}
                                                                             >
                                                                                 Kirim
@@ -401,16 +409,16 @@ function PostinganDetail() {
                                                 ))}
 
                                                 {/* Input untuk Balasan */}
-                                                <div className="flex items-center mt-2">
-                                                    <input
-                                                        type="text"
+                                                <div className="flex items-center mt-2 gap-2">
+                                                    <textarea
                                                         value={newReply[comment.id] || ""}
                                                         onChange={(e) => setNewReply({ ...newReply, [comment.id]: e.target.value })}
-                                                        className="border rounded p-1 flex-1 text-sm"
+                                                        className="border rounded p-1 flex-1 text-sm resize-none overflow-y-auto"
                                                         placeholder="Tulis balasan..."
+                                                        rows={1}
                                                     />
                                                     <button
-                                                        className="bg-blue-500 text-white px-3 py-1 rounded text-xs ml-2"
+                                                        className="bg-blue-500 text-white px-3 py-1 rounded text-xs"
                                                         onClick={() => addReply(comment.id, comment.user.username)}
                                                     >
                                                         Kirim
@@ -427,15 +435,18 @@ function PostinganDetail() {
                     )}
 
                     {/* Form Tambah Komentar */}
-                    <div className="mt-4 border-t pt-2">
-                        <input
-                            type="text"
+                    <div className="flex items-center gap-2 mt-2">
+                        <textarea
                             placeholder="Tulis komentar..."
                             value={newComment[post.id] || ""}
                             onChange={(e) => setNewComment({ ...newComment, [post.id]: e.target.value })}
-                            className="border rounded p-1 flex-1"
+                            className="border rounded p-1 flex-1 w-[675px] resize-none overflow-y-auto"
+                            rows={1}
                         />
-                        <button className="bg-blue-500 text-white px-3 py-1 rounded" onClick={() => addComment(post.id)}>
+                        <button
+                            className="bg-blue-500 text-white px-3 py-1 rounded"
+                            onClick={() => addComment(post.id)}
+                        >
                             Kirim
                         </button>
                     </div>

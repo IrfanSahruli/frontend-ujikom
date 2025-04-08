@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Sidebar from '@/app/components/Sidebar';
 import moment from 'moment';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/id';
 
 interface User {
     id: number;
@@ -31,6 +34,9 @@ interface Notifikasi {
     profile?: string | null;
     relative_time?: string;
 }
+
+dayjs.extend(relativeTime);
+dayjs.locale('id');
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3500';
 
@@ -132,17 +138,17 @@ const NotifikasiPage = () => {
                                     />
                                     <div>
                                         <p className="font-semibold">{notif.content}</p>
-                                        <p className="text-sm text-gray-500">{moment(notif.created_at).fromNow()}</p>
+                                        <p className="text-sm text-gray-500">{dayjs(notif.created_at).fromNow()}</p>
                                     </div>
                                 </div>
                                 {notif.forum_title && (
-                                    <p className="text-sm text-gray-500">Forum: {notif.forum_title} ({moment(notif.forum_relative_time).fromNow()})</p>
+                                    <p className="text-sm text-gray-500">Forum: {notif.forum_title} ({dayjs(notif.forum_relative_time).fromNow()})</p>
                                 )}
                                 {notif.comment && (
-                                    <p className="text-sm text-gray-500">Komentar: {notif.comment} ({moment(notif.relative_time).fromNow()})</p>
+                                    <p className="text-sm text-gray-500">Komentar: {notif.comment} ({dayjs(notif.relative_time).fromNow()})</p>
                                 )}
                                 {notif.reply && (
-                                    <p className="text-sm text-gray-500">Balasan: {notif.reply} ({moment(notif.reply_relative_time).fromNow()})</p>
+                                    <p className="text-sm text-gray-500">Balasan: {notif.reply} ({dayjs(notif.reply_relative_time).fromNow()})</p>
                                 )}
                             </div>
                         ))}

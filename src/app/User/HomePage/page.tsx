@@ -139,7 +139,7 @@ function HomePage() {
 
             if (response.status === 201) {
                 alert("Laporan berhasil dikirim");
-                setShowModal(false);
+                setShowModalForPost(null);
             } else {
                 alert("Gagal melaporkan postingan");
             }
@@ -158,7 +158,7 @@ function HomePage() {
         }
 
         const formData = new FormData();
-        formData.append("konten", caption);
+        formData.append("caption", caption);
         formData.append("kategori", kategori);
         if (foto) {
             formData.append("foto", foto);
@@ -171,7 +171,8 @@ function HomePage() {
                 { withCredentials: true }
             );
 
-            setPosts([response.data.postingan, ...posts]);
+            await fetchPosts();
+
             setIsOpen(false);
             setCaption("");
             setFoto(null);
@@ -347,21 +348,24 @@ function HomePage() {
                                         </div>
                                     </Link>
 
-                                    {/* Tombol opsi titik tiga */}
-                                    <button onClick={() => setSelectedPostId(selectedPostId === post.id ? null : post.id)} className="text-gray-600 hover:text-gray-900">
-                                        ⋮
-                                    </button>
+                                    <div className="relative inline-block">
+                                        <button
+                                            onClick={() => setSelectedPostId(selectedPostId === post.id ? null : post.id)}
+                                        >
+                                            ⋮
+                                        </button>
 
-                                    {selectedPostId === post.id && (
-                                        <div className="absolute top-10 right-4 bg-white border rounded-lg shadow-md p-2">
-                                            <button
-                                                className="text-sm text-red-500 hover:text-red-700"
-                                                onClick={() => setShowModalForPost(showModalForPost === post.id ? null : post.id)}
-                                            >
-                                                Laporkan Postingan
-                                            </button>
-                                        </div>
-                                    )}
+                                        {selectedPostId === post.id && (
+                                            <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-md p-2">
+                                                <button
+                                                    className="text-sm text-red-500 hover:text-red-700"
+                                                    onClick={() => setShowModalForPost(post.id)}
+                                                >
+                                                    Laporkan Postingan
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <p className="mt-2">{post.caption}</p>

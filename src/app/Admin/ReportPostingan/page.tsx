@@ -35,6 +35,8 @@ function ReportPostingan() {
     const [loading, setLoading] = useState(true);
     const [laporan, setLaporan] = useState<Laporan[]>([]);
     const [selectedLaporan, setSelectedLaporan] = useState<Laporan | null>(null);
+    const [selectedAction, setSelectedAction] = useState<"banned" | "tolak" | "">("");
+    const [filterStatus, setFilterStatus] = useState<string>('all');
 
     useEffect(() => {
         checkAuth();
@@ -68,17 +70,27 @@ function ReportPostingan() {
         }
     };
 
-    const handleStatusChange = async (newStatus: string) => {
+    const handleStatusChange = async (aksi: 'banned' | 'tolak') => {
         if (!selectedLaporan) return;
 
         try {
-            await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/laporkanPostingan/${selectedLaporan.id}`,
-                { statusLaporan: newStatus },
+            await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/laporkanPostingan/${selectedLaporan.id}/tinjau`,
+                { aksi }, // <- sesuaikan dengan backend
                 { withCredentials: true }
             );
 
+            // Update list laporan di frontend
             setLaporan(prevLaporan => prevLaporan.map(lapor =>
-                lapor.id === selectedLaporan.id ? { ...lapor, statusLaporan: newStatus } : lapor
+                lapor.id === selectedLaporan.id
+                    ? {
+                        ...lapor,
+                        statusLaporan: 'resolved',
+                        postingan: {
+                            ...lapor.postingan,
+                            statusPostingan: aksi === 'banned' ? 'non-aktif' : 'aktif'
+                        }
+                    }
+                    : lapor
             ));
 
             setSelectedLaporan(null);
@@ -102,6 +114,17 @@ function ReportPostingan() {
             <div className="flex-1 p-6">
                 <div className="max-w-5xl mx-auto bg-white shadow-lg rounded-lg p-6">
                     <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Laporan Postingan</h1>
+                    <div className="flex justify-end mb-4">
+                        <select
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            className="border px-3 py-2 rounded-md"
+                        >
+                            <option value="all">Semua</option>
+                            <option value="pending">Pending</option>
+                            <option value="resolved">Resolved</option>
+                        </select>
+                    </div>
                     {loading ? (
                         <div className="flex justify-center items-center h-32">
                             <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -112,7 +135,8 @@ function ReportPostingan() {
                                 <thead>
                                     <tr className="bg-blue-600 text-white">
                                         <th className="border border-gray-300 p-3">ID</th>
-                                        <th className="border border-gray-300 p-3">Username</th>
+                                        <th className="border border-gray-300 p-3">Pelapor</th>
+                                        <th className="border border-gray-300 p-3">Terlapor</th>
                                         <th className="border border-gray-300 p-3">Postingan</th>
                                         <th className="border border-gray-300 p-3">Status Postingan</th>
                                         <th className="border border-gray-300 p-3">Alasan</th>
@@ -122,10 +146,11 @@ function ReportPostingan() {
                                 </thead>
                                 <tbody>
                                     {laporan.length > 0 ? (
-                                        laporan.map((lapor) => (
+                                        laporan.filter((lapor) => filterStatus === 'all' || lapor.statusLaporan === filterStatus).map((lapor, index) => (
                                             <tr key={lapor.id} className="text-center bg-white hover:bg-gray-100 transition">
-                                                <td className="border border-gray-300 p-3">{lapor.id}</td>
+                                                <td className="border border-gray-300 p-3">{index + 1}</td>
                                                 <td className="border border-gray-300 p-3">{lapor.user?.username}</td>
+                                                <td className="border border-gray-300 p-3">{lapor.postingan.user?.username}</td>
                                                 <td className="border border-gray-300 p-3">
                                                     <div className="flex flex-col items-center">
                                                         {lapor.postingan?.foto && (
@@ -142,15 +167,17 @@ function ReportPostingan() {
                                                 <td className="border border-gray-300 p-3">{lapor.alasan}</td>
                                                 <td className="border border-gray-300 p-3 font-semibold text-blue-600">{lapor.statusLaporan}</td>
                                                 <td className="border border-gray-300 p-3">
-                                                    <Button onClick={() => setSelectedLaporan(lapor)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-transform hover:scale-105">
-                                                        Edit Status
+                                                    <Button onClick={() => setSelectedLaporan(lapor)} disabled={lapor.statusLaporan === 'resolved'} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-transform hover:scale-105">
+                                                        Tinjau
                                                     </Button>
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={6} className="text-center p-6 text-gray-500">Tidak ada laporan</td>
+                                            <td colSpan={5} className="p-4 text-center text-gray-500">
+                                                Data tidak ditemukan
+                                            </td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -169,19 +196,29 @@ function ReportPostingan() {
 
                         <label className="block font-medium mb-2">Pilih Status:</label>
                         <select
-                            className="w-full border p-2 rounded"
-                            value={selectedLaporan.statusLaporan}
-                            onChange={(e) => handleStatusChange(e.target.value)}
+                            value={selectedAction}
+                            onChange={(e) => setSelectedAction(e.target.value as "banned" | "tolak")}
+                            className="border rounded p-2 w-full"
                         >
-                            <option value="pending">Pending</option>
-                            <option value="resolved">Resolved</option>
+                            <option value="" disabled>Pilih aksi</option>
+                            <option value="banned">Banned Postingan</option>
+                            <option value="tolak">Tolak Laporan</option>
                         </select>
 
                         <div className="flex justify-end mt-4">
                             <button className="mr-2 px-4 py-2 bg-gray-300 rounded" onClick={() => setSelectedLaporan(null)}>
                                 Batal
                             </button>
-                            <button className="px-4 py-2 bg-blue-500 text-white rounded" onClick={() => handleStatusChange(selectedLaporan.statusLaporan)}>
+                            <button
+                                className="px-4 py-2 bg-blue-500 text-white rounded"
+                                onClick={() => {
+                                    if (!selectedAction) {
+                                        alert("Silahkan pilih aksi terlebih dahulu!");
+                                        return;
+                                    }
+                                    handleStatusChange(selectedAction);
+                                }}
+                            >
                                 Simpan
                             </button>
                         </div>

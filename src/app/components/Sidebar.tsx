@@ -7,10 +7,18 @@ import Link from 'next/link';
 import { Dialog } from '@headlessui/react';
 import { Home, Bell, User, LogOut } from 'lucide-react';
 
+type SidebarItemProps = {
+    href: string;
+    icon: React.ReactNode;
+    label: string;
+    badge?: number; // optional
+};
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3500';
 
 function Sidebar() {
     const [user, setUser] = useState<{ id: number; username: string; fotoProfil: string | null } | null>(null);
+    const [unreadCount, setUnreadCount] = useState(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const router = useRouter();
 
@@ -25,6 +33,17 @@ function Sidebar() {
         }
     };
 
+    const fetchUnreadNotif = async () => {
+        try {
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/notifikasi`, {
+                withCredentials: true,
+            });
+            setUnreadCount(response.data.unreadCount);
+        } catch (error) {
+            console.error('Gagal mengambil notifikasi:', error);
+        }
+    };
+
     const handleLogout = async () => {
         try {
             await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/logout`, { withCredentials: true });
@@ -36,6 +55,7 @@ function Sidebar() {
 
     useEffect(() => {
         fetchUser();
+        fetchUnreadNotif();
     }, []);
 
     return (
@@ -50,10 +70,10 @@ function Sidebar() {
                 {/* Menu */}
                 <nav className="flex-1 p-4 space-y-1">
                     <SidebarItem href="/User/HomePage" icon={<Home size={24} />} label="Home" />
-                    <SidebarItem href="/User/Notifikasi" icon={<Bell size={24} />} label="Notifikasi" />
+                    <SidebarItem href="/User/Notifikasi" icon={<Bell size={24} />} label="Notifikasi" badge={unreadCount} />
                     <SidebarItem href="/User/Profile"
                         icon={user ? <img src={user.fotoProfil ? `${apiUrl}${user.fotoProfil}` : "/default-avatar.png"} className="w-8 h-8 rounded-full border" alt="Avatar" /> : <User size={24} />}
-                        label="Profil"
+                        label="Profile"
                     />
                 </nav>
 
@@ -93,10 +113,17 @@ function Sidebar() {
     );
 }
 
-const SidebarItem = ({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) => (
+const SidebarItem = ({ href, icon, label, badge = 0 }: SidebarItemProps) => (
     <Link href={href} className="flex items-center space-x-3 p-3 rounded-md hover:bg-gray-100 transition">
-        {icon}
-        <span className="text-lg">{label}</span>
+        <div className="relative">
+            {icon}
+            {badge > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1">
+                    {badge}
+                </span>
+            )}
+        </div>
+        <span>{label}</span>
     </Link>
 );
 

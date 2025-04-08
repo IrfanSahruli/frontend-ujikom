@@ -21,11 +21,17 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3500';
 function UserList() {
     const router = useRouter();
     const [users, setUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [filteredUsers, setFilteredUsers] = useState<User[]>([])
+    const [loading, setLoading] = useState(true)
+    const [filterStatus, setFilterStatus] = useState('semua')
 
     useEffect(() => {
         checkAuth();
     }, []);
+
+    useEffect(() => {
+        handleFilter()
+    }, [filterStatus, users]);
 
     const checkAuth = async () => {
         try {
@@ -63,6 +69,15 @@ function UserList() {
         }
     };
 
+    const handleFilter = () => {
+        if (filterStatus === 'semua') {
+            setFilteredUsers(users)
+        } else {
+            const result = users.filter((user) => user.status.toLowerCase() === filterStatus.toLowerCase())
+            setFilteredUsers(result)
+        }
+    }
+
     if (loading) {
         return (
             <div className='flex justify-center items-center h-screen'>
@@ -78,6 +93,18 @@ function UserList() {
             <div className="flex-1 p-6">
                 <div className="max-w-5xl mx-auto bg-white shadow-lg rounded-lg p-6">
                     <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Daftar User</h1>
+
+                    <div className="flex justify-end mb-4">
+                        <select
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            className="border px-3 py-2 rounded-md"
+                        >
+                            <option value="semua">Semua</option>
+                            <option value="aktif">Aktif</option>
+                            <option value="nonaktif">Nonaktif</option>
+                        </select>
+                    </div>
 
                     {loading ? (
                         <div className="flex justify-center items-center h-32">
@@ -97,19 +124,21 @@ function UserList() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {users.length > 0 ? (
-                                        users.map(user => (
+                                    {filteredUsers.length > 0 ? (
+                                        filteredUsers.map((user, index) => (
                                             <tr key={user.id} className="text-center bg-white hover:bg-gray-100 transition">
-                                                <td className="border border-gray-300 p-3">{user.id}</td>
+                                                <td className="border border-gray-300 p-3">{index + 1}</td>
                                                 <td className="border border-gray-300 p-3">{user.username}</td>
                                                 <td className="border border-gray-300 p-3">{user.email}</td>
                                                 <td className="border border-gray-300 p-3">{user.noHp}</td>
-                                                <td className="border border-gray-300 p-3 text-green-600 font-semibold">{user.status}</td>
+                                                <td
+                                                    className={`border border-gray-300 p-3 font-semibold ${user.status === 'aktif' ? 'text-green-600' : 'text-red-600'
+                                                        }`}
+                                                >
+                                                    {user.status}
+                                                </td>
                                                 <td className="border border-gray-300 p-3">
-                                                    <Button
-                                                        onClick={() => handleDelete(user.id)}
-                                                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition-transform hover:scale-105"
-                                                    >
+                                                    <Button variant="destructive" onClick={() => handleDelete(user.id)}>
                                                         Hapus
                                                     </Button>
                                                 </td>
@@ -117,7 +146,9 @@ function UserList() {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={6} className="text-center p-6 text-gray-500">Tidak ada user tersedia</td>
+                                            <td colSpan={5} className="p-4 text-center text-gray-500">
+                                                Data tidak ditemukan
+                                            </td>
                                         </tr>
                                     )}
                                 </tbody>
