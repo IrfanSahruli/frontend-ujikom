@@ -46,6 +46,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://l
 
 function PostinganDetail() {
     const params = useParams();
+    const [loading, setLoading] = useState(true);
     const [post, setPost] = useState<Post | null>(null);
     const [comments, setComments] = useState<{ [key: number]: Comment[] }>({});
     const [replies, setReplies] = useState<{ [key: number]: Reply[] }>({});
@@ -56,6 +57,27 @@ function PostinganDetail() {
     const [likeCount, setLikeCount] = useState(post?.like || 0);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
+
+    const checkAuth = async () => {
+        try {
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, {
+                withCredentials: true,
+            });
+
+            if (res.data.role !== 'user') {
+                router.push('/Login'); // bukan admin
+            } else {
+                setLoading(false);
+                if (params.postId) {
+                    fetchPost();
+                    fetchLikeStatus();
+                    fetchComments();
+                }
+            }
+        } catch (error) {
+            router.push('/Login'); // token invalid / belum login
+        }
+    };
 
     const fetchPost = async () => {
         try {
@@ -240,14 +262,12 @@ function PostinganDetail() {
     };
 
     useEffect(() => {
-        if (params.postId) {
-            fetchPost();
-            fetchLikeStatus();
-            fetchComments();
-        }
+        checkAuth();
     }, [params.postId]);
 
-    if (!post) return <p>Loading...</p>;
+    if (!post) return <div className='flex justify-center items-center h-screen'>
+        <p className='text-xl font-semibold'>Loading...</p>
+    </div>;
 
     return (
         <div className="flex">

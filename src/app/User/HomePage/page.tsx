@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Cookies from 'js-cookie';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/app/components/Sidebar';
@@ -49,7 +50,7 @@ function HomePage() {
     const [error, setError] = useState<string>('');
     const [kategoriFilter, setKategoriFilter] = useState<string>('');
     const [kategori, setKategori] = useState<string>('');
-    const [isOpen, setIsOpen] = useState(false); // Tambahkan state modal
+    const [isOpen, setIsOpen] = useState(false);
     const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [selectedAlasan, setSelectedAlasan] = useState<Record<number, string>>({});
@@ -57,6 +58,7 @@ function HomePage() {
     const [likedPosts, setLikedPosts] = useState<number[]>([]);
     const [likeCount, setLikeCount] = useState(posts.length > 0 ? posts[0].like : 0);
     const [sortBy, setSortBy] = useState("terbaru");
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
 
     const alasanLaporan = [
@@ -66,14 +68,21 @@ function HomePage() {
         "Spam",
     ];
 
-    const fetchUser = async () => {
+    const checkAuth = async () => {
         try {
-            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, {
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, {
                 withCredentials: true,
             });
-            setUser(response.data); // Pastikan response sesuai
+
+            if (res.data.role !== 'user') {
+                router.push('/Login'); // bukan admin
+            } else {
+                setLoading(false)
+                setUser(res.data); // simpan user
+                fetchPosts(kategoriFilter); // ambil data post
+            }
         } catch (error) {
-            console.error('Gagal mengambil data user', error);
+            router.push('/Login'); // token invalid / belum login
         }
     };
 
@@ -86,7 +95,6 @@ function HomePage() {
             const response = await axios.get(url, { withCredentials: true });
             const posts = response.data.postingan;
 
-            // Ambil status like untuk setiap postingan
             const likedStatuses = await Promise.all(
                 posts.map(async (post: Post) => {
                     try {
@@ -97,12 +105,11 @@ function HomePage() {
                         return { id: post.id, liked: likeResponse.data.liked, likeCount: likeResponse.data.likeCount };
                     } catch (error) {
                         console.error(`Error fetching like status for post ${post.id}:`, error);
-                        return { id: post.id, liked: false, likeCount: post.like }; // Default jika gagal fetch
+                        return { id: post.id, liked: false, likeCount: post.like };
                     }
                 })
             );
 
-            // Gabungkan data postingan dengan status like
             const updatedPosts = posts.map((post: Post) => {
                 const likeStatus = likedStatuses.find((status) => status.id === post.id);
                 return { ...post, isLiked: likeStatus?.liked || false, like: likeStatus?.likeCount || post.like };
@@ -164,7 +171,7 @@ function HomePage() {
                 { withCredentials: true }
             );
 
-            setPosts([response.data.postingan, ...posts]); // Tambahkan postingan baru ke state
+            setPosts([response.data.postingan, ...posts]);
             setIsOpen(false);
             setCaption("");
             setFoto(null);
@@ -193,8 +200,8 @@ function HomePage() {
 
                 setLikedPosts((prev) =>
                     prev.includes(postId)
-                        ? prev.filter((id) => id !== postId) // Jika sudah like, hapus dari state
-                        : [...prev, postId] // Jika belum like, tambahkan ke state
+                        ? prev.filter((id) => id !== postId)
+                        : [...prev, postId]
                 );
             }
         } catch (error) {
@@ -204,13 +211,20 @@ function HomePage() {
 
     const handleSortChange = (sortType: string) => {
         setSortBy(sortType);
-        fetchPosts(kategoriFilter); // Ambil postingan baru sesuai sorting
+        fetchPosts(kategoriFilter);
     };
 
     useEffect(() => {
-        fetchUser();
-        fetchPosts(kategoriFilter);
+        checkAuth();
     }, [kategoriFilter, sortBy]);
+
+    if (loading) {
+        return (
+            <div className='flex justify-center items-center h-screen'>
+                <p className='text-xl font-semibold'>Loading...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen">

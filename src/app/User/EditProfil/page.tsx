@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3500';
 
 function EditProfil() {
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
     const [userData, setUserData] = useState<{
         username: string;
@@ -22,17 +23,34 @@ function EditProfil() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     useEffect(() => {
-        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, { withCredentials: true })
-            .then(response => {
-                setUserData({
-                    username: response.data.username ?? '',
-                    email: response.data.email ?? '',
-                    noHp: response.data.noHp ?? '',
-                    fotoProfil: response.data.fotoProfil ?? ''
+        const checkAuth = async () => {
+            try {
+                const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, {
+                    withCredentials: true,
                 });
-            })
-            .catch(error => console.error('Error mengambil data user:', error));
-    }, []);
+
+                if (res.data.role !== 'user') {
+                    router.push('/Login'); // bukan admin
+                } else {
+                    setLoading(false);
+                    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, { withCredentials: true })
+                        .then(response => {
+                            setUserData({
+                                username: response.data.username ?? '',
+                                email: response.data.email ?? '',
+                                noHp: response.data.noHp ?? '',
+                                fotoProfil: response.data.fotoProfil ?? ''
+                            });
+                        })
+                        .catch(error => console.error('Error mengambil data user:', error));
+                }
+            } catch (error) {
+                router.push('/Login'); // token invalid / belum login
+            }
+        };
+
+        checkAuth();
+    }, [router]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!userData) return;
@@ -73,6 +91,14 @@ function EditProfil() {
             console.error('Error updating profile:', error);
         }
     };
+
+    if (loading) {
+        return (
+            <div className='flex justify-center items-center h-screen'>
+                <p className='text-xl font-semibold'>Loading...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen">

@@ -35,18 +35,36 @@ interface Notifikasi {
 const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3500';
 
 const NotifikasiPage = () => {
+    const [loading, setLoading] = useState(true);
     const [notifikasi, setNotifikasi] = useState<Notifikasi[]>([]);
     const [unreadCount, setUnreadCount] = useState<number>(0);
     const router = useRouter();
 
     useEffect(() => {
-        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/notifikasi`, { withCredentials: true })
-            .then((res) => {
-                setNotifikasi(res.data.notifications);
-                setUnreadCount(res.data.unreadCount);
-            })
-            .catch((err) => console.error("Error fetching notifications:", err));
-    }, []);
+        const checkAuth = async () => {
+            try {
+                const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, {
+                    withCredentials: true,
+                });
+
+                if (res.data.role !== 'user') {
+                    router.push('/Login'); // bukan admin
+                } else {
+                    setLoading(false);
+                    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/notifikasi`, { withCredentials: true })
+                        .then((res) => {
+                            setNotifikasi(res.data.notifications);
+                            setUnreadCount(res.data.unreadCount);
+                        })
+                        .catch((err) => console.error("Error fetching notifications:", err));
+                }
+            } catch (error) {
+                router.push('/Login'); // token invalid / belum login
+            }
+        };
+
+        checkAuth();
+    }, [router]);
 
     const handleReadNotification = async (id: number) => {
         try {
@@ -81,6 +99,14 @@ const NotifikasiPage = () => {
         console.log("Navigating to:", targetUrl); // Debugging URL
         router.push(targetUrl);
     };
+
+    if (loading) {
+        return (
+            <div className='flex justify-center items-center h-screen'>
+                <p className='text-xl font-semibold'>Loading...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex">

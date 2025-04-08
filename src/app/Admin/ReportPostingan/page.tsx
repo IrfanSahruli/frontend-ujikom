@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import SidebarAdmin from '@/app/components/SidebarAdmin';
@@ -30,13 +31,28 @@ interface Laporan {
 const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3500';
 
 function ReportPostingan() {
+    const router = useRouter();
+    const [loading, setLoading] = useState(true);
     const [laporan, setLaporan] = useState<Laporan[]>([]);
     const [selectedLaporan, setSelectedLaporan] = useState<Laporan | null>(null);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchLaporanPostingan();
-    }, []);
+        checkAuth();
+    }, [router]);
+
+    const checkAuth = async () => {
+        try {
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, { withCredentials: true });
+
+            if (res.data.role !== 'admin') {
+                router.push('/Login'); // bukan admin
+            } else {
+                fetchLaporanPostingan(); // lanjut ambil data dashboard
+            }
+        } catch (error) {
+            router.push('/Login'); // belum login / token ga valid
+        }
+    };
 
     const fetchLaporanPostingan = async () => {
         try {
@@ -70,6 +86,14 @@ function ReportPostingan() {
             console.error('Gagal memperbarui status laporan', error);
         }
     };
+
+    if (loading) {
+        return (
+            <div className='flex justify-center items-center h-screen'>
+                <p className='text-xl font-semibold'>Loading...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen bg-gray-100">

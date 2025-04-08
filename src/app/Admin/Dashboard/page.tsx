@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import SidebarAdmin from '@/app/components/SidebarAdmin';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -9,12 +10,28 @@ import { User, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 function Dashboard() {
+    const router = useRouter();
+    const [loading, setLoading] = useState(true);
     const [totalUsers, setTotalUsers] = useState(0);
     const [userStats, setUserStats] = useState([]);
     const [totalPost, setTotalPost] = useState(0);
     const [postStats, setPostStats] = useState([]);
 
     useEffect(() => {
+        const checkAuth = async () => {
+            try {
+                const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, { withCredentials: true });
+
+                if (res.data.role !== 'admin') {
+                    router.push('/Login'); // bukan admin
+                } else {
+                    fetchData(); // lanjut ambil data dashboard
+                }
+            } catch (error) {
+                router.push('/Login'); // belum login / token ga valid
+            }
+        };
+
         const fetchData = async () => {
             try {
                 const [userRes, userStatRes, postRes, postStatRes] = await Promise.all([
@@ -30,11 +47,21 @@ function Dashboard() {
                 setPostStats(postStatRes.data.data);
             } catch (error) {
                 console.error('Gagal mengambil data:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
-        fetchData();
-    }, []);
+        checkAuth();
+    }, [router]);
+
+    if (loading) {
+        return (
+            <div className='flex justify-center items-center h-screen'>
+                <p className='text-xl font-semibold'>Loading...</p>
+            </div>
+        );
+    }
 
     return (
         <div className='flex min-h-screen bg-gray-100'>

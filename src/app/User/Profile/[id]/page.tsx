@@ -26,6 +26,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://l
 
 export default function UserProfile() {
     const params = useParams();
+    const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<User | null>(null);
     const [postingan, setPostingan] = useState<Post[]>([]);
     const [likedPosts, setLikedPosts] = useState<number[]>([]);
@@ -33,33 +34,50 @@ export default function UserProfile() {
     const router = useRouter();
 
     useEffect(() => {
-        const fetchUserProfile = async () => {
-            try {
-                const response = await axios.get(
-                    `${process.env.NEXT_PUBLIC_API_URL}/profile/${params.id}`,
+        checkAuth();
+    }, [params.id]);
+
+    const checkAuth = async () => {
+        try {
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, {
+                withCredentials: true,
+            });
+
+            if (res.data.role !== 'user') {
+                router.push('/Login'); // bukan admin
+            } else {
+                setLoading(false);
+                fetchUserProfile();
+            }
+        } catch (error) {
+            router.push('/Login'); // token invalid / belum login
+        }
+    };
+
+    const fetchUserProfile = async () => {
+        try {
+            const response = await axios.get(
+                `${process.env.NEXT_PUBLIC_API_URL}/profile/${params.id}`,
+                { withCredentials: true }
+            );
+            setUser(response.data.user);
+            setPostingan(response.data.user.postingan || []);
+
+            // Ambil daftar post yang sudah di-like oleh user dari API `/like`
+            const likedPromises = response.data.user.postingan.map(async (post: Post) => {
+                const likeStatus = await axios.get(
+                    `${process.env.NEXT_PUBLIC_API_URL}/like/status/${post.id}`,
                     { withCredentials: true }
                 );
-                setUser(response.data.user);
-                setPostingan(response.data.user.postingan || []);
+                return likeStatus.data.liked ? post.id : null;
+            });
 
-                // Ambil daftar post yang sudah di-like oleh user dari API `/like`
-                const likedPromises = response.data.user.postingan.map(async (post: Post) => {
-                    const likeStatus = await axios.get(
-                        `${process.env.NEXT_PUBLIC_API_URL}/like/status/${post.id}`,
-                        { withCredentials: true }
-                    );
-                    return likeStatus.data.liked ? post.id : null;
-                });
-
-                const likedPostIds = (await Promise.all(likedPromises)).filter((id) => id !== null);
-                setLikedPosts(likedPostIds);
-            } catch (error) {
-                console.error('Gagal mengambil data user', error);
-            }
-        };
-
-        fetchUserProfile();
-    }, [params.id]);
+            const likedPostIds = (await Promise.all(likedPromises)).filter((id) => id !== null);
+            setLikedPosts(likedPostIds);
+        } catch (error) {
+            console.error('Gagal mengambil data user', error);
+        }
+    };
 
     const handleLikeToggle = async (postId: number) => {
         try {
@@ -86,6 +104,14 @@ export default function UserProfile() {
             console.error("Error updating like status:", error);
         }
     };
+
+    if (loading) {
+        return (
+            <div className='flex justify-center items-center h-screen'>
+                <p className='text-xl font-semibold'>Loading...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen">

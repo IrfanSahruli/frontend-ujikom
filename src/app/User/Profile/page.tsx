@@ -20,6 +20,7 @@ interface Post {
 const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3500';
 
 const Profile = () => {
+    const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<{ id: number; username: string; fotoProfil: string | null } | null>(null);
     const [postingan, setPostingan] = useState<Post[]>([]);
     const [likedPosts, setLikedPosts] = useState<number[]>([]);
@@ -27,66 +28,83 @@ const Profile = () => {
     const router = useRouter();
 
     useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, {
-                    withCredentials: true,
-                });
-                setUser(response.data);
-            } catch (error) {
-                console.error("Gagal mengambil data user", error);
-            }
-        };
-
-        const fetchMyPosts = async () => {
-            try {
-                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/myPostingan`, {
-                    withCredentials: true,
-                });
-
-                console.log("Response dari API:", response.data);
-
-                if (!response.data.postingan || !Array.isArray(response.data.postingan)) {
-                    console.error("Data postingan tidak valid:", response.data);
-                    setPostingan([]);
-                    return;
-                }
-
-                const posts = response.data.postingan; // Ambil array postingan dari response
-
-                const likedStatuses = await Promise.all(
-                    posts.map(async (post: Post) => {
-                        try {
-                            const likeResponse = await axios.get(
-                                `${process.env.NEXT_PUBLIC_API_URL}/like/status/${post.id}`,
-                                { withCredentials: true }
-                            );
-                            return { id: post.id, liked: likeResponse.data.liked, likeCount: likeResponse.data.likeCount };
-                        } catch (error) {
-                            console.error(`Error fetching like status for post ${post.id}:`, error);
-                            return { id: post.id, liked: false, likeCount: post.like };
-                        }
-                    })
-                );
-
-                const updatedPosts = posts.map((post: Post) => {
-                    const likeStatus = likedStatuses.find((status) => status.id === post.id);
-                    return { ...post, isLiked: likeStatus?.liked || false, like: likeStatus?.likeCount || post.like };
-                });
-
-                setPostingan(updatedPosts);
-
-                const likedPostIds = likedStatuses.filter((status) => status.liked).map((status) => status.id);
-                setLikedPosts(likedPostIds);
-            } catch (error) {
-                console.error("Gagal mengambil postingan saya", error);
-                setPostingan([]);
-            }
-        };
-
-        fetchUser();
-        fetchMyPosts();
+        checkAuth();
     }, []);
+
+    const checkAuth = async () => {
+        try {
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, {
+                withCredentials: true,
+            });
+
+            if (res.data.role !== 'user') {
+                router.push('/Login'); // bukan admin
+            } else {
+                setLoading(false);
+                fetchUser();
+                fetchMyPosts();
+            }
+        } catch (error) {
+            router.push('/Login'); // token invalid / belum login
+        }
+    };
+
+    const fetchUser = async () => {
+        try {
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getMe`, {
+                withCredentials: true,
+            });
+            setUser(response.data);
+        } catch (error) {
+            console.error("Gagal mengambil data user", error);
+        }
+    };
+
+    const fetchMyPosts = async () => {
+        try {
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/myPostingan`, {
+                withCredentials: true,
+            });
+
+            console.log("Response dari API:", response.data);
+
+            if (!response.data.postingan || !Array.isArray(response.data.postingan)) {
+                console.error("Data postingan tidak valid:", response.data);
+                setPostingan([]);
+                return;
+            }
+
+            const posts = response.data.postingan; // Ambil array postingan dari response
+
+            const likedStatuses = await Promise.all(
+                posts.map(async (post: Post) => {
+                    try {
+                        const likeResponse = await axios.get(
+                            `${process.env.NEXT_PUBLIC_API_URL}/like/status/${post.id}`,
+                            { withCredentials: true }
+                        );
+                        return { id: post.id, liked: likeResponse.data.liked, likeCount: likeResponse.data.likeCount };
+                    } catch (error) {
+                        console.error(`Error fetching like status for post ${post.id}:`, error);
+                        return { id: post.id, liked: false, likeCount: post.like };
+                    }
+                })
+            );
+
+            const updatedPosts = posts.map((post: Post) => {
+                const likeStatus = likedStatuses.find((status) => status.id === post.id);
+                return { ...post, isLiked: likeStatus?.liked || false, like: likeStatus?.likeCount || post.like };
+            });
+
+            setPostingan(updatedPosts);
+
+            const likedPostIds = likedStatuses.filter((status) => status.liked).map((status) => status.id);
+            setLikedPosts(likedPostIds);
+        } catch (error) {
+            console.error("Gagal mengambil postingan saya", error);
+            setPostingan([]);
+        }
+    };
 
     const toggleLike = async (postId: number) => {
         try {
@@ -115,6 +133,14 @@ const Profile = () => {
             console.error("Error toggling like:", error);
         }
     };
+
+    if (loading) {
+        return (
+            <div className='flex justify-center items-center h-screen'>
+                <p className='text-xl font-semibold'>Loading...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen">
