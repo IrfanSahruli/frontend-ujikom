@@ -13,6 +13,7 @@ interface Post {
     waktu: string | null;
     caption: string | null;
     like: number;
+    jumlahShare: number;
     isLiked: boolean,
     jumlahKomentar: number;
 }
@@ -134,6 +135,25 @@ const Profile = () => {
         }
     };
 
+    const handleShare = async (postId: number) => {
+        try {
+            await navigator.clipboard.writeText(`${window.location.origin}/User/PostinganDetail/${postId}`);
+            alert("Link berhasil disalin!");
+
+            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/postingan/share/${postId}`, {}, { withCredentials: true });
+
+            setPostingan((prevPosts) =>
+                prevPosts.map((post) =>
+                    post.id === postId
+                        ? { ...post, jumlahShare: (post.jumlahShare || 0) + 1 }
+                        : post
+                )
+            );
+        } catch (err) {
+            console.error("Gagal share:", err);
+        }
+    };
+
     if (loading) {
         return (
             <div className='flex justify-center items-center h-screen'>
@@ -220,6 +240,12 @@ const Profile = () => {
                                     <button className="flex items-center space-x-1 transition-transform duration-200 transform hover:scale-110 text-gray-600 hover:text-blue-500"
                                         onClick={() => router.push(`/User/PostinganDetail/${post.id}`)}>
                                         💬 <span className="text-sm">Komentar ({post?.jumlahKomentar || 0})</span>
+                                    </button>
+                                    <button
+                                        className="flex items-center space-x-1 transition-transform duration-200 transform hover:scale-110 text-gray-600 hover:text-blue-500"
+                                        onClick={() => handleShare(post.id)}
+                                    >
+                                        🔗 Share ({post?.jumlahShare || 0})
                                     </button>
                                 </div>
                             </div>
