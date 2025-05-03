@@ -14,6 +14,7 @@ interface Post {
     foto: string | null;
     waktu: string;
     like: number;
+    jumlahShare: number;
     jumlahKomentar: number;
     user: {
         id: number;
@@ -37,6 +38,7 @@ interface Comment {
 interface Reply {
     id: number;
     balasanKomentar: string;
+    createdAt: string;
     user: {
         id: number;
         username: string;
@@ -164,72 +166,28 @@ function PostinganDetail() {
         }
     };
 
-    const addReply = async (komentarId: number, username: string) => {
-        const mention = `@${username} `;
-        const existingText = newReply[komentarId] || "";
-        const replyText = existingText.startsWith(mention) ? existingText.trim() : mention + existingText.trim();
-
-        if (!replyText) return;
+    const handleReply = async (komentarId: number) => {
+        if (!newReply[komentarId]?.trim()) return;
 
         try {
-            const response = await axios.post(
+            const res = await axios.post(
                 `${process.env.NEXT_PUBLIC_API_URL}/balaskomentar`,
-                { komentarId, balasanKomentar: replyText },
+                {
+                    komentarId,
+                    balasanKomentar: newReply[komentarId],
+                },
                 { withCredentials: true }
             );
 
             setReplies((prev) => ({
                 ...prev,
-                [komentarId]: [...(prev[komentarId] || []), response.data.balasan],
+                [komentarId]: [...(prev[komentarId] || []), res.data.balasan],
             }));
 
-            setNewReply((prev) => ({ ...prev, [komentarId]: "" }));
-        } catch (error) {
-            console.error("Gagal menambah balasan komentar", error);
+            setNewReply({ ...newReply, [komentarId]: "" });
+        } catch (err) {
+            console.error("Gagal mengirim balasan", err);
         }
-    };
-
-    const addSubReply = async (parentReplyId: number, komentarId: number, username: string) => {
-        const mention = `@${username} `;
-        const existingText = newReply[parentReplyId] || "";
-        const replyText = existingText.startsWith(mention) ? existingText.trim() : mention + existingText.trim();
-
-        if (!replyText) return;
-
-        try {
-            const response = await axios.post(
-                `${process.env.NEXT_PUBLIC_API_URL}/balaskomentar`,
-                { komentarId, parentReplyId, balasanKomentar: replyText },
-                { withCredentials: true }
-            );
-
-            const newSubReply = response.data.balasan;
-
-            setReplies((prev) => ({
-                ...prev,
-                [komentarId]: prev[komentarId].map((reply) =>
-                    reply.id === parentReplyId
-                        ? { ...reply, childBalasan: [...(reply.childBalasan || []), newSubReply] }
-                        : reply
-                ),
-            }));
-
-            setNewReply((prev) => ({ ...prev, [parentReplyId]: "" }));
-        } catch (error) {
-            console.error("Gagal menambah balasan komentar", error);
-        }
-    };
-
-    const toggleReplyVisibility = (replyId: number, username: string) => {
-        setReplyVisibility((prev) => ({
-            ...prev,
-            [replyId]: !prev[replyId], // Toggle antara true/false
-        }));
-
-        setNewReply((prev) => ({
-            ...prev,
-            [replyId]: prev[replyId] || `@${username} `, // Isi otomatis dengan mention jika kosong
-        }));
     };
 
     const handleLikeToggle = async () => {
@@ -248,6 +206,24 @@ function PostinganDetail() {
             }
         } catch (error) {
             console.error("Error toggling like:", error);
+        }
+    };
+
+    const handleShare = async (postId: number) => {
+        try {
+            await navigator.clipboard.writeText(`${window.location.origin}/User/PostinganDetail/${postId}`);
+            alert("Link berhasil disalin!");
+
+            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/postingan/share/${postId}`, {}, { withCredentials: true });
+
+            setPost((prev) =>
+                prev
+                    ? { ...prev, jumlahShare: (prev.jumlahShare || 0) + 1 }
+                    : prev
+            );
+
+        } catch (err) {
+            console.error("Gagal share:", err);
         }
     };
 
@@ -314,6 +290,12 @@ function PostinganDetail() {
                     <button className="flex items-center space-x-1 text-gray-600 hover:text-blue-500">
                         💬 <span className="text-sm">Komentar ({post?.jumlahKomentar || 0})</span>
                     </button>
+                    <button
+                        className="flex items-center space-x-1 transition-transform duration-200 transform hover:scale-110 text-gray-600 hover:text-blue-500"
+                        onClick={() => handleShare(post.id)}
+                    >
+                        🔗 Share ({post?.jumlahShare || 0})
+                    </button>
                 </div>
                 <hr className="mt-5" />
 
@@ -353,73 +335,54 @@ function PostinganDetail() {
                                         {/* Balasan Komentar & Form Balasan (Tampil jika tombol "Balas" diklik) */}
                                         {replyVisibility[comment.id] && (
                                             <div className="ml-6 mt-2 border-l-2 pl-3">
-                                                {/* Menampilkan Balasan */}
                                                 {replies[comment.id]?.map((reply) => (
-                                                    <div key={reply.id} className="ml-6 mt-2 border-l-2 pl-3">
-                                                        <div className="flex items-start mt-2">
-                                                            <img
-                                                                src={reply.user?.fotoProfil ? `${apiUrl}${reply.user.fotoProfil}` : "/default-avatar.png"}
-                                                                alt="Avatar"
-                                                                className="w-6 h-6 rounded-full object-cover"
-                                                            />
-                                                            <div className="ml-2">
-                                                                <span className="font-semibold text-xs">{reply.user.username}</span>
-                                                                <p className="text-sm">{reply.balasanKomentar}</p>
-                                                                <button onClick={() => toggleReplyVisibility(reply.id, reply.user.username)} className="text-blue-500 text-xs">
-                                                                    Balas
-                                                                </button>
+                                                    <div key={reply.id} className="flex items-start mt-2">
+                                                        <img
+                                                            src={reply.user?.fotoProfil ? `${apiUrl}${reply.user.fotoProfil}` : "/default-avatar.png"}
+                                                            alt="Avatar"
+                                                            className="w-7 h-7 rounded-full object-cover"
+                                                        />
+                                                        <div className="ml-2">
+                                                            <span className="font-semibold text-sm">{reply.user.username}</span>
+                                                            <p className="text-xs text-gray-400">{dayjs(reply.createdAt).fromNow()}</p>
+                                                            <p className="text-sm">
+                                                                <span>{reply.balasanKomentar}</span>
+                                                            </p>
 
-                                                                {replyVisibility[reply.id] && (
-                                                                    <div className="ml-6 mt-2 border-l-2 pl-3">
-                                                                        {reply.childBalasan?.map((subReply) => (
-                                                                            <div key={subReply.id} className="flex items-start mt-2">
-                                                                                <img
-                                                                                    src={subReply.user?.fotoProfil ? `${apiUrl}${subReply.user.fotoProfil}` : "/default-avatar.png"}
-                                                                                    alt="Avatar"
-                                                                                    className="w-6 h-6 rounded-full object-cover"
-                                                                                />
-                                                                                <div className="ml-2">
-                                                                                    <span className="font-semibold text-xs">{subReply.user.username}</span>
-                                                                                    <p className="text-sm">{subReply.balasanKomentar}</p>
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
-
-                                                                        {/* Input untuk Balasan Balasan */}
-                                                                        <div className="flex items-center mt-2 gap-2">
-                                                                            <textarea
-                                                                                value={newReply[reply.id] || ""}
-                                                                                onChange={(e) => setNewReply((prev) => ({ ...prev, [reply.id]: e.target.value }))}
-                                                                                className="border rounded p-1 flex-1 text-sm resize-none overflow-y-auto"
-                                                                                placeholder="Tulis balasan..."
-                                                                                rows={1}
-                                                                            />
-                                                                            <button
-                                                                                className="bg-blue-500 text-white px-3 py-1 rounded text-xs"
-                                                                                onClick={() => addSubReply(reply.id, comment.id, reply.user.username)}
-                                                                            >
-                                                                                Kirim
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
+                                                            {/* Tombol balas reply */}
+                                                            <button
+                                                                onClick={() => {
+                                                                    setReplyVisibility((prev) => ({
+                                                                        ...prev,
+                                                                        [comment.id]: true,
+                                                                    }));
+                                                                    setNewReply({
+                                                                        ...newReply,
+                                                                        [comment.id]: `@${reply.user.username} `,
+                                                                    });
+                                                                }}
+                                                                className="text-blue-500 text-xs mt-1"
+                                                            >
+                                                                Balas
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 ))}
 
-                                                {/* Input untuk Balasan */}
-                                                <div className="flex items-center mt-2 gap-2">
-                                                    <textarea
-                                                        value={newReply[comment.id] || ""}
-                                                        onChange={(e) => setNewReply({ ...newReply, [comment.id]: e.target.value })}
-                                                        className="border rounded p-1 flex-1 text-sm resize-none overflow-y-auto"
+                                                {/* Form Input Balas */}
+                                                <div className="mt-2 flex">
+                                                    <input
+                                                        type="text"
+                                                        className="border p-1 w-full text-xs mr-2"
                                                         placeholder="Tulis balasan..."
-                                                        rows={1}
+                                                        value={newReply[comment.id] || ""}
+                                                        onChange={(e) =>
+                                                            setNewReply({ ...newReply, [comment.id]: e.target.value })
+                                                        }
                                                     />
                                                     <button
-                                                        className="bg-blue-500 text-white px-3 py-1 rounded text-xs"
-                                                        onClick={() => addReply(comment.id, comment.user.username)}
+                                                        onClick={() => handleReply(comment.id)}
+                                                        className="bg-blue-500 text-white text-xs px-2 py-1 mt-1 rounded"
                                                     >
                                                         Kirim
                                                     </button>

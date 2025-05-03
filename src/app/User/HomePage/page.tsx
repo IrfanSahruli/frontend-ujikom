@@ -15,6 +15,7 @@ interface Post {
     kategori: string | null;
     waktu: string;
     like: number;
+    jumlahShare: number;
     isLiked: boolean;
     jumlahKomentar: number;
     createdAt: string;
@@ -112,7 +113,7 @@ function HomePage() {
 
             const updatedPosts = posts.map((post: Post) => {
                 const likeStatus = likedStatuses.find((status) => status.id === post.id);
-                return { ...post, isLiked: likeStatus?.liked || false, like: likeStatus?.likeCount || post.like };
+                return { ...post, isLiked: likeStatus?.liked || false, like: likeStatus?.likeCount || post.like, jumlahShare: post.jumlahShare };
             });
 
             setPosts(updatedPosts);
@@ -146,6 +147,25 @@ function HomePage() {
         } catch (error) {
             console.error("Gagal mengirim laporan:", error);
             alert("Terjadi kesalahan. Silakan coba lagi.");
+        }
+    };
+
+    const handleShare = async (postId: number) => {
+        try {
+            await navigator.clipboard.writeText(`${window.location.origin}/User/PostinganDetail/${postId}`);
+            alert("Link berhasil disalin!");
+
+            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/postingan/share/${postId}`, {}, { withCredentials: true });
+
+            setPosts((prevPosts) =>
+                prevPosts.map((post) =>
+                    post.id === postId
+                        ? { ...post, jumlahShare: (post.jumlahShare || 0) + 1 }
+                        : post
+                )
+            );
+        } catch (err) {
+            console.error("Gagal share:", err);
         }
     };
 
@@ -384,6 +404,12 @@ function HomePage() {
                                     <button className="flex items-center space-x-1 transition-transform duration-200 transform hover:scale-110 text-gray-600 hover:text-blue-500"
                                         onClick={() => router.push(`/User/PostinganDetail/${post.id}`)}>
                                         💬 Komentar ({post?.jumlahKomentar || 0})
+                                    </button>
+                                    <button
+                                        className="flex items-center space-x-1 transition-transform duration-200 transform hover:scale-110 text-gray-600 hover:text-blue-500"
+                                        onClick={() => handleShare(post.id)}
+                                    >
+                                        🔗 Share ({post?.jumlahShare || 0})
                                     </button>
                                 </div>
                             </div>
